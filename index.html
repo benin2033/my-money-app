@@ -1056,6 +1056,272 @@
         bottom: calc(12px + env(safe-area-inset-bottom));
       }
     }
+
+    @media (max-width: 500px) {
+      body {
+        padding:
+          calc(8px + env(safe-area-inset-top))
+          8px
+          calc(112px + env(safe-area-inset-bottom));
+        font-size: 15px;
+      }
+
+      .app {
+        padding: 0 4px;
+        gap: 8px;
+      }
+
+      .header,
+      .summary-grid,
+      .form,
+      .list-wrap,
+      .sync-config-panel {
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .summary .stat:nth-child(n + 5) {
+        display: block;
+      }
+
+      .stat {
+        min-width: 0;
+        padding: 8px;
+      }
+
+      .stat-value {
+        font-size: 0.96rem;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .field,
+      .actions,
+      .field input,
+      .field select {
+        width: 100%;
+      }
+
+      .field input,
+      .field select,
+      .field button,
+      .btn-link,
+      button {
+        min-height: 48px;
+      }
+
+      .type-switch {
+        width: 100%;
+        margin-top: 4px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .type-switch button {
+        width: 100%;
+        min-height: 50px;
+      }
+
+      .records {
+        border: none;
+        background: transparent;
+      }
+
+      .records thead {
+        display: none;
+      }
+
+      .records tbody {
+        display: grid;
+        gap: 8px;
+      }
+
+      .records tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "item amount"
+          "item amount"
+          "date date"
+          "actions actions";
+        row-gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+        background: #fffaf4;
+      }
+
+      .records td {
+        border-bottom: none;
+        padding: 0;
+        min-width: 0;
+      }
+
+      .records td.cell-type,
+      .records td.cell-note {
+        display: none;
+      }
+
+      .records td.cell-item {
+        grid-area: item;
+      }
+
+      .records td.cell-item .item-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+
+      .records td.cell-item .item-wrap > span:first-child {
+        order: 2;
+        font-size: 0.96rem;
+        font-weight: 600;
+      }
+
+      .records td.cell-item .item-wrap .tag-category {
+        order: 1;
+      }
+
+      .records td.cell-item .item-wrap .tag:not(.tag-category) {
+        order: 3;
+      }
+
+      .records td.cell-amount {
+        grid-area: amount;
+        justify-self: end;
+        align-self: start;
+        font-size: 1.05rem;
+        font-weight: 800;
+      }
+
+      .records td.cell-date {
+        grid-area: date;
+        font-size: 0.78rem;
+        color: var(--subtle);
+      }
+
+      .records td.cell-actions {
+        grid-area: actions;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .records td.empty {
+        display: block;
+        text-align: center;
+        padding: 10px 4px;
+      }
+
+      .actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        position: static;
+      }
+
+      .actions button {
+        width: 100%;
+      }
+
+      .actions .btn-ghost,
+      .actions .btn-primary {
+        min-height: 54px;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .robot-btn {
+        width: 50px;
+        height: 50px;
+        right: 10px;
+        bottom: calc(10px + env(safe-area-inset-bottom));
+      }
+
+      .robot-panel {
+        width: min(340px, calc(100vw - 16px));
+        right: 8px;
+        bottom: calc(68px + env(safe-area-inset-bottom));
+        max-height: 60vh;
+        overflow: auto;
+      }
+    }
+
+    @media (max-width: 390px) {
+      body {
+        padding:
+          calc(8px + env(safe-area-inset-top))
+          8px
+          calc(126px + env(safe-area-inset-bottom));
+        font-size: 14px;
+      }
+
+      .header {
+        padding-top: 10px;
+        padding-bottom: 6px;
+      }
+
+      h1 {
+        font-size: 1.06rem;
+      }
+
+      .subtitle {
+        font-size: 0.76rem;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .pie-wrap,
+      #expensePie {
+        width: 120px;
+        height: 120px;
+      }
+
+      .records tr {
+        padding: 9px;
+        gap: 5px;
+      }
+
+      .records td.cell-amount {
+        font-size: 1rem;
+      }
+
+      .actions {
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+
+      .actions .btn-ghost,
+      .actions .btn-primary {
+        min-height: 52px;
+        font-size: 0.96rem;
+      }
+
+      .robot-btn {
+        width: 46px;
+        height: 46px;
+        right: 8px;
+      }
+
+      .robot-panel {
+        width: calc(100vw - 12px);
+        right: 6px;
+        bottom: calc(60px + env(safe-area-inset-bottom));
+      }
+    }
   </style>
 </head>
 <body>
