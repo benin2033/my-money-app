@@ -373,6 +373,7 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
+      min-width: 0;
     }
 
     .field label {
@@ -636,6 +637,12 @@
       backdrop-filter: blur(4px);
     }
 
+    .records tr.editing-row {
+      outline: 2px solid rgba(181, 117, 66, 0.45);
+      outline-offset: -2px;
+      box-shadow: 0 0 0 3px rgba(181, 117, 66, 0.12);
+    }
+
     .item-wrap {
       display: inline-flex;
       align-items: center;
@@ -654,6 +661,25 @@
 
     .btn-delete:hover {
       background: #ffe6e1;
+    }
+
+    .btn-edit {
+      border-color: #d7c5b5;
+      color: #6f4d3a;
+      background: #fff7ed;
+      border-radius: 8px;
+      padding: 6px 9px;
+      font-size: 0.82rem;
+    }
+
+    .btn-edit:hover {
+      background: #f5e6d5;
+    }
+
+    input[type="date"] {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
     }
 
     .robot-btn {
@@ -846,6 +872,31 @@
       align-items: center;
     }
 
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(78px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(10px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 40;
+      background: rgba(70, 54, 45, 0.94);
+      color: #fffaf4;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      max-width: calc(100vw - 20px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     body.standalone .install-banner {
       display: none !important;
     }
@@ -1036,6 +1087,8 @@
         grid-area: actions;
         display: flex;
         justify-content: flex-end;
+        gap: 6px;
+        flex-wrap: wrap;
       }
 
       .records td.empty {
@@ -1069,6 +1122,31 @@
       .app {
         padding: 0 4px;
         gap: 8px;
+      }
+
+      .header {
+        align-items: flex-start;
+      }
+
+      .header-right {
+        margin-left: auto;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .header-right .btn-link {
+        min-height: 34px;
+        padding: 6px 8px;
+        font-size: 0.76rem;
+        border-radius: 8px;
+        white-space: nowrap;
+      }
+
+      #syncStatus {
+        font-size: 0.72rem;
+        white-space: nowrap;
       }
 
       .header,
@@ -1119,6 +1197,17 @@
       .btn-link,
       button {
         min-height: 48px;
+      }
+
+      .header-right .btn-link {
+        min-height: 34px;
+      }
+
+      #date {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        font-size: 0.9rem;
       }
 
       .type-switch {
@@ -1216,6 +1305,8 @@
         grid-area: actions;
         display: flex;
         justify-content: flex-end;
+        gap: 6px;
+        flex-wrap: wrap;
       }
 
       .records td.empty {
@@ -1255,6 +1346,11 @@
         bottom: calc(68px + env(safe-area-inset-bottom));
         max-height: 60vh;
         overflow: auto;
+      }
+
+      .toast {
+        bottom: calc(70px + env(safe-area-inset-bottom));
+        font-size: 0.78rem;
       }
     }
 
@@ -1320,6 +1416,16 @@
         width: calc(100vw - 12px);
         right: 6px;
         bottom: calc(60px + env(safe-area-inset-bottom));
+      }
+
+      .header-right .btn-link {
+        min-height: 32px;
+        padding: 5px 7px;
+        font-size: 0.72rem;
+      }
+
+      .toast {
+        bottom: calc(64px + env(safe-area-inset-bottom));
       }
     }
   </style>
@@ -1515,6 +1621,7 @@
   </main>
 
   <button id="robotBtn" class="robot-btn" title="開啟小幫手">🤖</button>
+  <div id="appToast" class="toast" role="status" aria-live="polite"></div>
   <aside id="robotPanel" class="robot-panel" aria-hidden="true">
     <p class="tool-title">小幫手工具箱</p>
     <ol class="tool-list">
@@ -1598,6 +1705,8 @@
     ];
 
     const form = document.getElementById("recordForm");
+    const formSubmitBtn = form ? form.querySelector('button[type="submit"]') : null;
+    const formResetBtn = form ? form.querySelector('button[type="reset"]') : null;
     const dateInput = document.getElementById("date");
     const typeInput = document.getElementById("type");
     const itemNameInput = document.getElementById("itemName");
@@ -1648,6 +1757,7 @@
     const clearLeaf = document.getElementById("clearLeaf");
     const calcScreen = document.getElementById("calcScreen");
     const calcGrid = document.getElementById("calcGrid");
+    const appToast = document.getElementById("appToast");
 
     const currency = new Intl.NumberFormat("zh-TW", {
       style: "currency",
@@ -1663,8 +1773,10 @@
     let lastPoint = { x: 0, y: 0 };
     let pieScope = "month";
     let splitEnabled = false;
+    let editingRecordId = null;
     let editingProjectId = null;
     let draggingProjectId = null;
+    let toastTimer = null;
 
     function setTodayDate() {
       const today = new Date();
@@ -1730,6 +1842,74 @@
         setSplitEnabled(false);
       }
       renderCategoryOptions();
+    }
+
+    function showToast(message) {
+      if (!appToast) return;
+      appToast.textContent = String(message || "");
+      appToast.classList.add("show");
+      if (toastTimer) {
+        clearTimeout(toastTimer);
+      }
+      toastTimer = setTimeout(() => {
+        appToast.classList.remove("show");
+      }, 1600);
+    }
+
+    function setFormEditMode(editing) {
+      if (formSubmitBtn) {
+        formSubmitBtn.textContent = editing ? "儲存修改" : "新增紀錄";
+      }
+      if (formResetBtn) {
+        formResetBtn.textContent = editing ? "取消修改" : "清空";
+      }
+    }
+
+    function beginEditRecord(recordId) {
+      const target = records.find((record) => record.id === recordId);
+      if (!target) return;
+
+      editingRecordId = recordId;
+      setFormEditMode(true);
+
+      setType(target.type);
+      dateInput.value = String(target.date || "");
+      itemNameInput.value = String(target.itemName || "");
+      amountInput.value = Number.isFinite(Number(target.amount)) ? String(Number(target.amount)) : "";
+      noteInput.value = String(target.note || "");
+
+      renderCategoryOptions();
+      if (target.category && Array.from(categorySelect.options).some((option) => option.value === target.category)) {
+        categorySelect.value = target.category;
+      }
+
+      renderProjectOptions();
+      if (target.projectId && Array.from(projectSelect.options).some((option) => option.value === target.projectId)) {
+        projectSelect.value = target.projectId;
+      } else {
+        projectSelect.value = "none";
+      }
+
+      const hasSplit = Number.isFinite(Number(target.myShare)) && Number.isFinite(Number(target.susieShare));
+      setSplitEnabled(target.type === "expense" && hasSplit);
+      if (splitEnabled) {
+        susieShareInput.value = String(Number(target.susieShare) || 0);
+        refreshSplitHint();
+      }
+
+      autoClassifyHint.textContent = "正在修改紀錄";
+      renderRecords();
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+      itemNameInput.focus();
+    }
+
+    function exitEditMode(shouldRender = true) {
+      editingRecordId = null;
+      setFormEditMode(false);
+      autoClassifyHint.textContent = "";
+      if (shouldRender) {
+        renderRecords();
+      }
     }
 
     function setProjectManagerOpen(open) {
@@ -2069,6 +2249,9 @@
       if (project && project.id !== "none") {
         tr.classList.add("project-row");
       }
+      if (editingRecordId === record.id) {
+        tr.classList.add("editing-row");
+      }
 
       const splitText = hasSusieExpense
         ? `｜拆分：我 ${currency.format(Number(record.myShare))}、Susie ${currency.format(Number(record.susieShare))}`
@@ -2093,7 +2276,10 @@
         </td>
         <td class="cell-note">${record.note ? escapeHtml(record.note) : "-"}${splitText}</td>
         <td class="cell-amount ${amountClass}">${currency.format(Number(record.amount || 0))}</td>
-        <td class="cell-actions"><button class="btn-delete" data-id="${record.id}">刪除</button></td>
+        <td class="cell-actions">
+          <button class="btn-edit" data-id="${record.id}">修改</button>
+          <button class="btn-delete" data-id="${record.id}">刪除</button>
+        </td>
       `;
       return tr;
     }
@@ -2357,6 +2543,7 @@
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
+      const isEditing = Boolean(editingRecordId);
       const amount = Number(amountInput.value);
       if (!Number.isFinite(amount) || amount <= 0) {
         alert("請輸入正確的金額。");
@@ -2364,7 +2551,7 @@
       }
 
       const record = {
-        id: crypto.randomUUID(),
+        id: editingRecordId || crypto.randomUUID(),
         date: dateInput.value,
         type: typeInput.value,
         itemName: itemNameInput.value.trim(),
@@ -2395,8 +2582,19 @@
         record.susieShare = susieShare;
       }
 
-      records.push(record);
+      if (editingRecordId) {
+        const targetIndex = records.findIndex((item) => item.id === editingRecordId);
+        if (targetIndex >= 0) {
+          records[targetIndex] = record;
+        } else {
+          records.push(record);
+        }
+      } else {
+        records.push(record);
+      }
+
       saveRecords();
+      exitEditMode(false);
       renderRecords();
       itemNameInput.value = "";
       amountInput.value = "";
@@ -2404,10 +2602,12 @@
       autoClassifyHint.textContent = "";
       setSplitEnabled(false);
       itemNameInput.focus();
+      showToast(isEditing ? "紀錄已更新" : "紀錄已新增");
     });
 
     form.addEventListener("reset", () => {
       setTimeout(() => {
+        exitEditMode();
         autoClassifyHint.textContent = "";
         renderCategoryOptions();
         projectSelect.value = "none";
@@ -2416,6 +2616,11 @@
     });
 
     itemNameInput.addEventListener("input", runAutoClassify);
+    categorySelect.addEventListener("change", () => {
+      if (!editingRecordId) return;
+      itemNameInput.value = categorySelect.value;
+      autoClassifyHint.textContent = "已依新類別同步更新項目名稱";
+    });
     projectManagerToggleBtn.addEventListener("click", () => {
       setProjectManagerOpen(projectManagerPanel.hidden);
     });
@@ -2579,12 +2784,23 @@
     recordBody.addEventListener("click", (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-      if (!target.matches(".btn-delete")) return;
-      const id = target.dataset.id;
+      const button = target.closest("button");
+      if (!(button instanceof HTMLButtonElement)) return;
+      const id = button.dataset.id;
       if (!id) return;
-      records = records.filter((r) => r.id !== id);
-      saveRecords();
-      renderRecords();
+      if (button.classList.contains("btn-edit")) {
+        beginEditRecord(id);
+        return;
+      }
+      if (button.classList.contains("btn-delete")) {
+        records = records.filter((r) => r.id !== id);
+        if (editingRecordId === id) {
+          exitEditMode(false);
+        }
+        saveRecords();
+        renderRecords();
+        showToast("紀錄已刪除");
+      }
     });
 
     robotBtn.addEventListener("click", () => {
