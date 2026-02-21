@@ -1,0 +1,25 @@
+{
+  "name": "暖暖記帳 App",
+  "short_name": "暖暖記帳",
+  "description": "可安裝到主畫面的暖色系繁體中文記帳 App。",
+  "lang": "zh-Hant",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f9f1e5",
+  "theme_color": "#b57542",
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./app-icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

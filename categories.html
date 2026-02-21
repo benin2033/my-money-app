@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#b57542" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./app-icon.svg" type="image/svg+xml" />
+  <title>類別管理 - 記帳 App</title>
+  <style>
+    :root {
+      --bg: #f7efe2;
+      --card: rgba(255, 250, 244, 0.92);
+      --text: #46362d;
+      --subtle: #7a6357;
+      --line: #e5d7c8;
+      --accent: #b57542;
+      --accent-deep: #975d33;
+      --danger: #ab5c52;
+      --shadow: 0 10px 24px rgba(92, 57, 34, 0.12);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background:
+        radial-gradient(circle at 6% 10%, rgba(255, 255, 255, 0.75) 0 16%, transparent 17%),
+        radial-gradient(circle at 92% 12%, rgba(247, 206, 182, 0.35) 0 18%, transparent 19%),
+        radial-gradient(circle at 90% 82%, rgba(240, 176, 140, 0.22) 0 24%, transparent 25%),
+        linear-gradient(160deg, #f9f1e5 0%, #f0dfcb 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 16px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::before {
+      left: -45px;
+      top: -35px;
+      opacity: 0.48;
+      background:
+        radial-gradient(circle at 50% 50%, #f2b9a4 0 22%, transparent 23%),
+        radial-gradient(circle at 28% 30%, #f8d8bb 0 18%, transparent 19%),
+        radial-gradient(circle at 76% 30%, #edbf9a 0 18%, transparent 19%),
+        radial-gradient(circle at 30% 74%, #df9f85 0 18%, transparent 19%),
+        radial-gradient(circle at 74% 74%, #f7c8b4 0 18%, transparent 19%),
+        radial-gradient(circle at 50% 50%, #fbeee0 0 60%, transparent 61%);
+    }
+
+    body::after {
+      right: -45px;
+      bottom: -35px;
+      opacity: 0.46;
+      background:
+        radial-gradient(circle at 50% 50%, #f4caa2 0 20%, transparent 21%),
+        radial-gradient(circle at 28% 32%, #f8e4c6 0 18%, transparent 19%),
+        radial-gradient(circle at 74% 32%, #e8bb86 0 18%, transparent 19%),
+        radial-gradient(circle at 32% 74%, #edce9c 0 18%, transparent 19%),
+        radial-gradient(circle at 72% 74%, #f7dfbf 0 18%, transparent 19%),
+        radial-gradient(circle at 50% 50%, #fbf2e3 0 60%, transparent 61%);
+    }
+
+    .app {
+      width: min(860px, 100%);
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      backdrop-filter: blur(4px);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.3rem;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--subtle);
+      font-size: 0.9rem;
+    }
+
+    .btn-link,
+    button,
+    input {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.93rem;
+      background: #fff9f2;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff8f0;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-deep);
+      border-color: var(--accent-deep);
+    }
+
+    .btn-danger {
+      color: var(--danger);
+      background: #fff2f0;
+      border-color: #e3c8c2;
+      padding: 6px 10px;
+      font-size: 0.82rem;
+    }
+
+    .toolbar {
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .form {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 2fr 4fr auto;
+      gap: 10px;
+    }
+
+    .tip {
+      margin: 8px 0 0;
+      color: var(--subtle);
+      font-size: 0.85rem;
+    }
+
+    .list {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fffaf4;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 36px 120px 1fr auto;
+      gap: 8px;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+      font-size: 0.92rem;
+      background: #fffaf4;
+    }
+
+    .row:last-child {
+      border-bottom: none;
+    }
+
+    .row.dragging {
+      opacity: 0.5;
+    }
+
+    .row.drag-over {
+      box-shadow: inset 0 0 0 2px rgba(181, 117, 66, 0.28);
+      background: #f8eddc;
+    }
+
+    .drag-handle {
+      text-align: center;
+      color: #9c7f6e;
+      user-select: none;
+      font-size: 1rem;
+      cursor: grab;
+    }
+
+    .name {
+      font-weight: 700;
+    }
+
+    .keywords {
+      color: #6c5649;
+    }
+
+    .empty {
+      padding: 16px;
+      color: var(--subtle);
+      text-align: center;
+    }
+
+    .conflict-box {
+      margin-top: 14px;
+      border: 1px solid #edd1cb;
+      border-radius: 12px;
+      background: #fff4f2;
+      padding: 12px;
+    }
+
+    .conflict-title {
+      margin: 0 0 8px;
+      color: #9a4f44;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .conflict-list {
+      margin: 0;
+      padding-left: 18px;
+      color: #734842;
+      font-size: 0.87rem;
+      display: grid;
+      gap: 4px;
+    }
+
+    .success-tip {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: var(--subtle);
+      min-height: 18px;
+    }
+
+    @media (max-width: 760px) {
+      .form {
+        grid-template-columns: 1fr;
+      }
+
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <div class="header">
+        <div>
+          <h1>類別管理</h1>
+          <p class="subtitle">查看與新增分類關鍵字，供主頁自動分類使用</p>
+        </div>
+        <a class="btn-link" href="index.html">返回記帳</a>
+      </div>
+
+      <form id="categoryForm" class="form">
+        <input id="categoryName" type="text" placeholder="類別名稱（例如：食）" required />
+        <input id="categoryKeywords" type="text" placeholder="關鍵字（逗號分隔，例如：午餐,火鍋,飲料）" required />
+        <button class="btn-primary" type="submit">新增類別</button>
+      </form>
+      <div class="toolbar">
+        <button id="exportBtn" type="button">匯出 JSON</button>
+        <button id="importBtn" type="button">匯入 JSON</button>
+        <input id="importFile" type="file" accept="application/json" hidden />
+      </div>
+      <p class="tip">提示：可拖曳排序，排序越前面會優先被主頁自動分類命中；若名稱重複，會把關鍵字合併進原類別。</p>
+      <p id="message" class="success-tip"></p>
+
+      <div class="list" id="categoryList"></div>
+      <div id="conflictBox" class="conflict-box" hidden>
+        <p class="conflict-title">關鍵字衝突提醒（同關鍵字存在於多個類別）</p>
+        <ul id="conflictList" class="conflict-list"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const CATEGORY_STORAGE_KEY = "money-app-categories-v1";
+    const DEFAULT_CATEGORIES = [
+      { name: "食", keywords: ["午餐", "早餐", "晚餐", "火鍋", "飲料", "咖啡", "便當"] },
+      { name: "行", keywords: ["公車", "捷運", "加油", "計程車", "停車", "高鐵", "火車"] },
+      { name: "衣", keywords: ["衣服", "鞋子", "外套", "褲子", "帽子", "配件"] },
+      { name: "住", keywords: ["房租", "水費", "電費", "瓦斯", "網路"] },
+      { name: "育樂", keywords: ["電影", "課程", "書籍", "遊戲", "旅行"] }
+    ];
+
+    const form = document.getElementById("categoryForm");
+    const nameInput = document.getElementById("categoryName");
+    const keywordsInput = document.getElementById("categoryKeywords");
+    const categoryList = document.getElementById("categoryList");
+    const exportBtn = document.getElementById("exportBtn");
+    const importBtn = document.getElementById("importBtn");
+    const importFile = document.getElementById("importFile");
+    const conflictBox = document.getElementById("conflictBox");
+    const conflictList = document.getElementById("conflictList");
+    const messageEl = document.getElementById("message");
+
+    let categories = [];
+    let dragIndex = null;
+
+    function normalizeCategories(input) {
+      if (!Array.isArray(input) || input.length === 0) {
+        return DEFAULT_CATEGORIES;
+      }
+
+      const cleaned = input
+        .map((item) => {
+          if (!item || typeof item.name !== "string") return null;
+          const name = item.name.trim();
+          if (!name) return null;
+          const keywords = Array.isArray(item.keywords)
+            ? item.keywords
+                .map((word) => String(word || "").trim())
+                .filter(Boolean)
+            : [];
+          return { name, keywords };
+        })
+        .filter(Boolean);
+
+      return cleaned.length ? cleaned : DEFAULT_CATEGORIES;
+    }
+
+    function loadCategories() {
+      try {
+        const raw = localStorage.getItem(CATEGORY_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : null;
+        categories = normalizeCategories(parsed);
+      } catch {
+        categories = normalizeCategories(null);
+      }
+      saveCategories();
+    }
+
+    function saveCategories() {
+      localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(categories));
+    }
+
+    function renderCategories() {
+      categoryList.innerHTML = "";
+
+      if (!categories.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "目前沒有任何類別。";
+        categoryList.appendChild(empty);
+        renderConflicts();
+        return;
+      }
+
+      categories.forEach((category, index) => {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.draggable = true;
+        row.dataset.index = String(index);
+
+        const handle = document.createElement("div");
+        handle.className = "drag-handle";
+        handle.textContent = "⋮⋮";
+        handle.title = "拖曳調整優先順序";
+
+        const name = document.createElement("div");
+        name.className = "name";
+        name.textContent = category.name;
+
+        const keywords = document.createElement("div");
+        keywords.className = "keywords";
+        keywords.textContent = category.keywords.join("、") || "（無關鍵字）";
+
+        const actionWrap = document.createElement("div");
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn-danger";
+        delBtn.type = "button";
+        delBtn.dataset.name = category.name;
+        delBtn.textContent = "刪除";
+        actionWrap.appendChild(delBtn);
+
+        row.appendChild(handle);
+        row.appendChild(name);
+        row.appendChild(keywords);
+        row.appendChild(actionWrap);
+
+        categoryList.appendChild(row);
+      });
+
+      renderConflicts();
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function showMessage(text) {
+      messageEl.textContent = text;
+      window.clearTimeout(showMessage.timerId);
+      showMessage.timerId = window.setTimeout(() => {
+        messageEl.textContent = "";
+      }, 3000);
+    }
+
+    function parseKeywords(raw) {
+      return raw
+        .split(",")
+        .map((word) => word.trim())
+        .filter(Boolean);
+    }
+
+    function buildConflictEntries() {
+      const keywordMap = new Map();
+      categories.forEach((category) => {
+        category.keywords.forEach((keyword) => {
+          const key = keyword.toLowerCase();
+          if (!keywordMap.has(key)) {
+            keywordMap.set(key, { keyword, owners: new Set() });
+          }
+          keywordMap.get(key).owners.add(category.name);
+        });
+      });
+
+      return Array.from(keywordMap.values()).filter((entry) => entry.owners.size > 1);
+    }
+
+    function renderConflicts() {
+      const conflicts = buildConflictEntries();
+      conflictList.innerHTML = "";
+
+      if (conflicts.length === 0) {
+        conflictBox.hidden = true;
+        return;
+      }
+
+      conflicts.forEach((entry) => {
+        const li = document.createElement("li");
+        li.textContent = `「${entry.keyword}」同時出現在：${Array.from(entry.owners).join("、")}`;
+        conflictList.appendChild(li);
+      });
+      conflictBox.hidden = false;
+    }
+
+    function moveCategory(from, to) {
+      if (from === to || from < 0 || to < 0 || from >= categories.length || to >= categories.length) {
+        return;
+      }
+      const [moved] = categories.splice(from, 1);
+      categories.splice(to, 0, moved);
+      saveCategories();
+      renderCategories();
+      showMessage("已更新類別優先順序");
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const name = nameInput.value.trim();
+      const keywords = parseKeywords(keywordsInput.value);
+
+      if (!name || keywords.length === 0) {
+        alert("請輸入類別名稱與至少一個關鍵字。");
+        return;
+      }
+
+      const existing = categories.find((item) => item.name === name);
+      if (existing) {
+        existing.keywords = Array.from(new Set([...existing.keywords, ...keywords]));
+      } else {
+        categories.push({ name, keywords });
+      }
+
+      saveCategories();
+      renderCategories();
+      form.reset();
+      nameInput.focus();
+      showMessage("類別已儲存");
+    });
+
+    categoryList.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (!target.matches(".btn-danger")) return;
+
+      const name = target.dataset.name;
+      if (!name) return;
+
+      categories = categories.filter((item) => item.name !== name);
+      saveCategories();
+      renderCategories();
+      showMessage("已刪除類別");
+    });
+
+    categoryList.addEventListener("dragstart", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const row = target.closest(".row");
+      if (!row) return;
+
+      dragIndex = Number(row.dataset.index);
+      row.classList.add("dragging");
+    });
+
+    categoryList.addEventListener("dragend", () => {
+      dragIndex = null;
+      categoryList.querySelectorAll(".row").forEach((row) => {
+        row.classList.remove("dragging");
+        row.classList.remove("drag-over");
+      });
+    });
+
+    categoryList.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const row = target.closest(".row");
+      if (!row) return;
+
+      categoryList.querySelectorAll(".row").forEach((item) => item.classList.remove("drag-over"));
+      row.classList.add("drag-over");
+    });
+
+    categoryList.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const row = target.closest(".row");
+      if (!row || dragIndex === null) return;
+
+      const dropIndex = Number(row.dataset.index);
+      categoryList.querySelectorAll(".row").forEach((item) => item.classList.remove("drag-over"));
+      moveCategory(dragIndex, dropIndex);
+    });
+
+    exportBtn.addEventListener("click", () => {
+      const payload = JSON.stringify(categories, null, 2);
+      const blob = new Blob([payload], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `money-app-categories-${date}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showMessage("已匯出 JSON");
+    });
+
+    importBtn.addEventListener("click", () => {
+      importFile.click();
+    });
+
+    importFile.addEventListener("change", async () => {
+      const file = importFile.files && importFile.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const next = normalizeCategories(parsed);
+        categories = next;
+        saveCategories();
+        renderCategories();
+        showMessage("已匯入類別設定");
+      } catch {
+        alert("匯入失敗：請確認 JSON 格式正確。");
+      } finally {
+        importFile.value = "";
+      }
+    });
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+      });
+    }
+
+    loadCategories();
+    renderCategories();
+  </script>
+</body>
+</html>

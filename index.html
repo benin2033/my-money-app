@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#b57542" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="暖暖記帳" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./app-icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./app-icon.svg" />
+  <title>暖系記帳 App</title>
+  <style>
+    :root {
+      --bg: #f7efe2;
+      --bg-soft: #fdf8f1;
+      --card: rgba(255, 250, 244, 0.9);
+      --text: #46362d;
+      --subtle: #7a6357;
+      --line: #e5d7c8;
+      --accent: #b57542;
+      --accent-deep: #975d33;
+      --danger: #ab5c52;
+      --income: #6d8b5a;
+      --expense: #b86e5d;
+      --radius: 18px;
+      --shadow: 0 10px 24px rgba(92, 57, 34, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 12%, rgba(255, 255, 255, 0.75) 0 16%, transparent 17%),
+        radial-gradient(circle at 88% 10%, rgba(247, 206, 182, 0.35) 0 18%, transparent 19%),
+        radial-gradient(circle at 90% 82%, rgba(240, 176, 140, 0.22) 0 24%, transparent 25%),
+        linear-gradient(160deg, #f9f1e5 0%, #f0dfcb 100%);
+      position: relative;
+      overflow-x: hidden;
+      padding: 30px 14px 80px;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(0.2px);
+    }
+
+    body::before {
+      left: -40px;
+      top: -30px;
+      background:
+        radial-gradient(circle at 52% 52%, #f2b9a4 0 22%, transparent 23%),
+        radial-gradient(circle at 28% 30%, #f8d8bb 0 18%, transparent 19%),
+        radial-gradient(circle at 76% 30%, #edbf9a 0 18%, transparent 19%),
+        radial-gradient(circle at 30% 74%, #df9f85 0 18%, transparent 19%),
+        radial-gradient(circle at 74% 74%, #f7c8b4 0 18%, transparent 19%),
+        radial-gradient(circle at 50% 50%, #fbeee0 0 60%, transparent 61%);
+      opacity: 0.5;
+    }
+
+    body::after {
+      right: -50px;
+      bottom: -40px;
+      background:
+        radial-gradient(circle at 50% 50%, #f4caa2 0 20%, transparent 21%),
+        radial-gradient(circle at 28% 32%, #f8e4c6 0 18%, transparent 19%),
+        radial-gradient(circle at 74% 32%, #e8bb86 0 18%, transparent 19%),
+        radial-gradient(circle at 32% 74%, #edce9c 0 18%, transparent 19%),
+        radial-gradient(circle at 72% 74%, #f7dfbf 0 18%, transparent 19%),
+        radial-gradient(circle at 50% 50%, #fbf2e3 0 60%, transparent 61%);
+      opacity: 0.45;
+    }
+
+    .app {
+      width: min(1080px, 100%);
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(4px);
+    }
+
+    .header {
+      padding: 22px 22px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      margin: 7px 0 0;
+      color: var(--subtle);
+      font-size: 0.94rem;
+    }
+
+    .btn-link,
+    button,
+    input,
+    select {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.94rem;
+      color: var(--text);
+      background: #fff9f2;
+      text-decoration: none;
+      line-height: 1.2;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #d8a477;
+      box-shadow: 0 0 0 3px rgba(181, 117, 66, 0.16);
+    }
+
+    button,
+    .btn-link {
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff8f0;
+      border-color: var(--accent);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-deep);
+      border-color: var(--accent-deep);
+    }
+
+    .btn-ghost:hover,
+    .btn-link:hover {
+      background: #f5e6d5;
+    }
+
+    .summary-grid {
+      padding: 12px 22px 22px;
+      display: grid;
+      grid-template-columns: 2.3fr 1fr;
+      gap: 12px;
+    }
+
+    .summary {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff7ec;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--subtle);
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .income {
+      color: var(--income);
+    }
+
+    .expense {
+      color: var(--expense);
+    }
+
+    .pie-box {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff7ec;
+      padding: 10px;
+      display: grid;
+      justify-items: center;
+      align-content: start;
+      gap: 8px;
+    }
+
+    .pie-title {
+      margin: 0;
+      font-size: 0.86rem;
+      color: var(--subtle);
+    }
+
+    .scope-switch {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .scope-btn {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+    }
+
+    .scope-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff8f0;
+    }
+
+    .pie-wrap {
+      width: 136px;
+      height: 136px;
+      position: relative;
+    }
+
+    #expensePie {
+      width: 136px;
+      height: 136px;
+    }
+
+    .pie-empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 0.8rem;
+      color: var(--subtle);
+      text-align: center;
+      padding: 24px;
+    }
+
+    .pie-legend {
+      width: 100%;
+      display: grid;
+      gap: 5px;
+      font-size: 0.8rem;
+      color: var(--subtle);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+      flex: 0 0 auto;
+    }
+
+    .legend-left {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .form {
+      padding: 0 22px 22px;
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(12, 1fr);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.82rem;
+      color: var(--subtle);
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: var(--subtle);
+      min-height: 18px;
+    }
+
+    .col-2 { grid-column: span 2; }
+    .col-3 { grid-column: span 3; }
+    .col-12 { grid-column: span 12; }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .list-wrap {
+      padding: 0 22px 22px;
+    }
+
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+    }
+
+    .list-header h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .list-count {
+      color: var(--subtle);
+      font-size: 0.84rem;
+    }
+
+    .records {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fffaf4;
+    }
+
+    .records th,
+    .records td {
+      padding: 11px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+      font-size: 0.91rem;
+    }
+
+    .records thead th {
+      background: #f7e6d0;
+      color: #6f4d3a;
+      font-weight: 700;
+    }
+
+    .records tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 14px;
+      color: var(--subtle);
+    }
+
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 0.79rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .tag-income {
+      color: #526d45;
+      background: rgba(141, 169, 119, 0.2);
+    }
+
+    .tag-expense {
+      color: #975344;
+      background: rgba(205, 139, 121, 0.22);
+    }
+
+    .tag-category {
+      color: #7b5f50;
+      background: #f1dfc8;
+      font-weight: 600;
+    }
+
+    .item-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .btn-delete {
+      border-color: #e3c8c2;
+      color: var(--danger);
+      background: #fff2f0;
+      border-radius: 8px;
+      padding: 6px 9px;
+      font-size: 0.82rem;
+    }
+
+    .btn-delete:hover {
+      background: #ffe6e1;
+    }
+
+    .robot-btn {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      border: 1px solid #e3c2a3;
+      background: linear-gradient(145deg, #f6dec1, #f0c899);
+      box-shadow: 0 8px 18px rgba(129, 81, 46, 0.25);
+      font-size: 1.5rem;
+      z-index: 30;
+    }
+
+    .robot-panel {
+      position: fixed;
+      right: 18px;
+      bottom: 92px;
+      width: min(360px, calc(100vw - 24px));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff8ef;
+      box-shadow: var(--shadow);
+      padding: 12px;
+      z-index: 30;
+      display: none;
+    }
+
+    .robot-panel.show {
+      display: block;
+    }
+
+    .tool-title {
+      margin: 0 0 8px;
+      color: #6f4d3a;
+      font-size: 0.93rem;
+      font-weight: 700;
+    }
+
+    .tool-list {
+      margin: 0 0 10px;
+      padding-left: 18px;
+      color: #7a6357;
+      font-size: 0.86rem;
+      line-height: 1.55;
+    }
+
+    .tool-switch {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .tool-switch button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff8f0;
+    }
+
+    .tool-body {
+      display: none;
+    }
+
+    .tool-body.show {
+      display: block;
+    }
+
+    .leaf-board-wrap {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px;
+      background: #faf2e5;
+    }
+
+    .leaf-board {
+      position: relative;
+      width: 100%;
+      height: 170px;
+      border-radius: 10px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 25% 65%, rgba(194, 221, 162, 0.55) 0 18%, transparent 19%),
+        radial-gradient(circle at 70% 35%, rgba(168, 206, 133, 0.56) 0 22%, transparent 23%),
+        radial-gradient(circle at 60% 75%, rgba(209, 232, 184, 0.55) 0 17%, transparent 18%),
+        linear-gradient(135deg, #f4f8e9, #eaf4db);
+    }
+
+    .leaf-canvas {
+      position: absolute;
+      inset: 0;
+      touch-action: none;
+    }
+
+    .leaf-actions {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .calc {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fbf1e3;
+    }
+
+    .calc-screen {
+      width: 100%;
+      margin-bottom: 8px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 1rem;
+      background: #fff8f0;
+    }
+
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .calc-grid button {
+      padding: 9px 0;
+      font-weight: 700;
+    }
+
+    @media (max-width: 860px) {
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .pie-box {
+        justify-items: start;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .form {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .col-2,
+      .col-3,
+      .actions {
+        grid-column: span 2;
+      }
+
+      .records th:nth-child(5),
+      .records td:nth-child(5) {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <div class="header">
+        <div>
+          <h1>暖暖記帳 App</h1>
+          <p class="subtitle">大地色系、花園氛圍，記下每一筆生活收支</p>
+        </div>
+        <div class="header-right">
+          <a class="btn-link" href="categories.html">管理類別</a>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary">
+          <div class="stat">
+            <div class="stat-label">目前結餘</div>
+            <div id="balance" class="stat-value">$0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">總收入</div>
+            <div id="totalIncome" class="stat-value income">$0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">總支出</div>
+            <div id="totalExpense" class="stat-value expense">$0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">本月收入累計</div>
+            <div id="monthIncome" class="stat-value income">$0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">當年度收入累計</div>
+            <div id="yearIncome" class="stat-value income">$0</div>
+          </div>
+        </div>
+        <div class="pie-box">
+          <p id="pieTitle" class="pie-title">本月消費分類占比</p>
+          <div class="scope-switch">
+            <button id="pieMonthBtn" type="button" class="scope-btn active">本月</button>
+            <button id="pieYearBtn" type="button" class="scope-btn">當年度</button>
+          </div>
+          <div class="pie-wrap">
+            <canvas id="expensePie" width="136" height="136"></canvas>
+            <div id="pieEmpty" class="pie-empty">尚無支出資料</div>
+          </div>
+          <div id="pieLegend" class="pie-legend"></div>
+        </div>
+      </div>
+
+      <form id="recordForm" class="form">
+        <div class="field col-2">
+          <label for="date">日期</label>
+          <input id="date" name="date" type="date" required />
+        </div>
+
+        <div class="field col-2">
+          <label for="type">類型</label>
+          <select id="type" name="type">
+            <option value="income">收入</option>
+            <option value="expense">支出</option>
+          </select>
+        </div>
+
+        <div class="field col-3">
+          <label for="itemName">項目名稱</label>
+          <input id="itemName" name="itemName" type="text" placeholder="例如：午餐、計程車、鞋子" required />
+          <span id="autoClassifyHint" class="hint"></span>
+        </div>
+
+        <div class="field col-2">
+          <label for="category">分類</label>
+          <select id="category" name="category" required></select>
+        </div>
+
+        <div class="field col-2">
+          <label for="amount">金額</label>
+          <input id="amount" name="amount" type="number" min="1" step="1" placeholder="0" required />
+        </div>
+
+        <div class="field col-3">
+          <label for="note">備註（可選）</label>
+          <input id="note" name="note" type="text" placeholder="簡短說明" />
+        </div>
+
+        <div class="actions col-12">
+          <button type="reset" class="btn-ghost">清空</button>
+          <button type="submit" class="btn-primary">新增紀錄</button>
+        </div>
+      </form>
+
+      <div class="list-wrap">
+        <div class="list-header">
+          <h2>交易明細</h2>
+          <span id="recordCount" class="list-count">0 筆紀錄</span>
+        </div>
+
+        <table class="records">
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>類型</th>
+              <th>項目 / 類別</th>
+              <th>備註</th>
+              <th>金額</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="recordBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <button id="robotBtn" class="robot-btn" title="開啟小幫手">🤖</button>
+  <aside id="robotPanel" class="robot-panel" aria-hidden="true">
+    <p class="tool-title">小幫手工具箱</p>
+    <ol class="tool-list">
+      <li>螢光筆可直接在葉面上塗寫</li>
+      <li>計算機，直接在頁面旁協助你做簡單計算</li>
+    </ol>
+    <div class="tool-switch">
+      <button type="button" id="showHighlighter" class="active">螢光筆</button>
+      <button type="button" id="showCalculator">計算機</button>
+    </div>
+
+    <section id="toolHighlighter" class="tool-body show">
+      <div class="leaf-board-wrap">
+        <div class="leaf-board">
+          <canvas id="leafCanvas" class="leaf-canvas"></canvas>
+        </div>
+      </div>
+      <div class="leaf-actions">
+        <button type="button" id="clearLeaf">清空葉面</button>
+      </div>
+    </section>
+
+    <section id="toolCalculator" class="tool-body">
+      <div class="calc">
+        <input id="calcScreen" class="calc-screen" type="text" value="0" readonly />
+        <div class="calc-grid" id="calcGrid">
+          <button type="button" data-action="clear">C</button>
+          <button type="button" data-action="delete">DEL</button>
+          <button type="button" data-value="%">%</button>
+          <button type="button" data-value="/">/</button>
+          <button type="button" data-value="7">7</button>
+          <button type="button" data-value="8">8</button>
+          <button type="button" data-value="9">9</button>
+          <button type="button" data-value="*">*</button>
+          <button type="button" data-value="4">4</button>
+          <button type="button" data-value="5">5</button>
+          <button type="button" data-value="6">6</button>
+          <button type="button" data-value="-">-</button>
+          <button type="button" data-value="1">1</button>
+          <button type="button" data-value="2">2</button>
+          <button type="button" data-value="3">3</button>
+          <button type="button" data-value="+">+</button>
+          <button type="button" data-value="0">0</button>
+          <button type="button" data-value=".">.</button>
+          <button type="button" data-action="equal" style="grid-column: span 2;">=</button>
+        </div>
+      </div>
+    </section>
+  </aside>
+
+  <script>
+    const RECORD_STORAGE_KEY = "money-app-records-v1";
+    const CATEGORY_STORAGE_KEY = "money-app-categories-v1";
+    const DEFAULT_CATEGORIES = [
+      { name: "食", keywords: ["午餐", "早餐", "晚餐", "火鍋", "飲料", "咖啡", "便當"] },
+      { name: "行", keywords: ["公車", "捷運", "加油", "計程車", "停車", "高鐵", "火車"] },
+      { name: "衣", keywords: ["衣服", "鞋子", "外套", "褲子", "帽子", "配件"] },
+      { name: "住", keywords: ["房租", "水費", "電費", "瓦斯", "網路"] },
+      { name: "育樂", keywords: ["電影", "課程", "書籍", "遊戲", "旅行"] }
+    ];
+    const PIE_COLORS = ["#d58a61", "#8ea96f", "#d7a84a", "#c97b6b", "#8e6ea6", "#80a7b2", "#b08866"];
+
+    const form = document.getElementById("recordForm");
+    const dateInput = document.getElementById("date");
+    const typeInput = document.getElementById("type");
+    const itemNameInput = document.getElementById("itemName");
+    const categorySelect = document.getElementById("category");
+    const amountInput = document.getElementById("amount");
+    const noteInput = document.getElementById("note");
+    const autoClassifyHint = document.getElementById("autoClassifyHint");
+
+    const balanceEl = document.getElementById("balance");
+    const totalIncomeEl = document.getElementById("totalIncome");
+    const totalExpenseEl = document.getElementById("totalExpense");
+    const monthIncomeEl = document.getElementById("monthIncome");
+    const yearIncomeEl = document.getElementById("yearIncome");
+    const recordBody = document.getElementById("recordBody");
+    const recordCountEl = document.getElementById("recordCount");
+    const pieCanvas = document.getElementById("expensePie");
+    const pieEmpty = document.getElementById("pieEmpty");
+    const pieLegend = document.getElementById("pieLegend");
+    const pieTitle = document.getElementById("pieTitle");
+    const pieMonthBtn = document.getElementById("pieMonthBtn");
+    const pieYearBtn = document.getElementById("pieYearBtn");
+
+    const robotBtn = document.getElementById("robotBtn");
+    const robotPanel = document.getElementById("robotPanel");
+    const showHighlighter = document.getElementById("showHighlighter");
+    const showCalculator = document.getElementById("showCalculator");
+    const toolHighlighter = document.getElementById("toolHighlighter");
+    const toolCalculator = document.getElementById("toolCalculator");
+    const leafCanvas = document.getElementById("leafCanvas");
+    const clearLeaf = document.getElementById("clearLeaf");
+    const calcScreen = document.getElementById("calcScreen");
+    const calcGrid = document.getElementById("calcGrid");
+
+    const currency = new Intl.NumberFormat("zh-TW", {
+      style: "currency",
+      currency: "TWD",
+      maximumFractionDigits: 0
+    });
+
+    let records = [];
+    let categories = [];
+    let calcExpression = "0";
+    let drawing = false;
+    let lastPoint = { x: 0, y: 0 };
+    let pieScope = "month";
+
+    function setTodayDate() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const dd = String(today.getDate()).padStart(2, "0");
+      dateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    function normalizeCategories(input) {
+      if (!Array.isArray(input) || input.length === 0) return DEFAULT_CATEGORIES;
+      const cleaned = input
+        .map((item) => {
+          if (!item || typeof item.name !== "string") return null;
+          const name = item.name.trim();
+          if (!name) return null;
+          const keywords = Array.isArray(item.keywords)
+            ? item.keywords.map((w) => String(w || "").trim()).filter(Boolean)
+            : [];
+          return { name, keywords };
+        })
+        .filter(Boolean);
+      return cleaned.length ? cleaned : DEFAULT_CATEGORIES;
+    }
+
+    function loadCategories() {
+      try {
+        const raw = localStorage.getItem(CATEGORY_STORAGE_KEY);
+        categories = normalizeCategories(raw ? JSON.parse(raw) : null);
+      } catch {
+        categories = normalizeCategories(null);
+      }
+      localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(categories));
+    }
+
+    function renderCategoryOptions() {
+      categorySelect.innerHTML = "";
+      categories.forEach((category, index) => {
+        const option = document.createElement("option");
+        option.value = category.name;
+        option.textContent = category.name;
+        categorySelect.appendChild(option);
+        if (index === 0) categorySelect.value = category.name;
+      });
+    }
+
+    function saveRecords() {
+      localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function loadRecords() {
+      try {
+        const raw = localStorage.getItem(RECORD_STORAGE_KEY);
+        records = raw ? JSON.parse(raw) : [];
+      } catch {
+        records = [];
+      }
+    }
+
+    function updateSummary() {
+      const now = new Date();
+      const currentYear = String(now.getFullYear());
+      const currentMonth = `${currentYear}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const income = records.filter((r) => r.type === "income").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const expense = records.filter((r) => r.type === "expense").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const monthIncome = records
+        .filter((r) => r.type === "income" && String(r.date || "").startsWith(currentMonth))
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const yearIncome = records
+        .filter((r) => r.type === "income" && String(r.date || "").startsWith(`${currentYear}-`))
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const balance = income - expense;
+      balanceEl.textContent = currency.format(balance);
+      totalIncomeEl.textContent = currency.format(income);
+      totalExpenseEl.textContent = currency.format(expense);
+      monthIncomeEl.textContent = currency.format(monthIncome);
+      yearIncomeEl.textContent = currency.format(yearIncome);
+      drawExpensePie(pieScope);
+    }
+
+    function createRecordRow(record) {
+      const tr = document.createElement("tr");
+      const typeLabel = record.type === "income" ? "收入" : "支出";
+      const amountClass = record.type === "income" ? "income" : "expense";
+      const typeTagClass = record.type === "income" ? "tag-income" : "tag-expense";
+      const itemName = (record.itemName || "").trim() || (record.category || "").trim() || "未命名";
+      const categoryName = (record.category || "").trim() || "未分類";
+
+      tr.innerHTML = `
+        <td>${escapeHtml(record.date || "-")}</td>
+        <td><span class="tag ${typeTagClass}">${typeLabel}</span></td>
+        <td>
+          <span class="item-wrap">
+            <span>${escapeHtml(itemName)}</span>
+            <span class="tag tag-category">${escapeHtml(categoryName)}</span>
+          </span>
+        </td>
+        <td>${record.note ? escapeHtml(record.note) : "-"}</td>
+        <td class="${amountClass}">${currency.format(Number(record.amount || 0))}</td>
+        <td><button class="btn-delete" data-id="${record.id}">刪除</button></td>
+      `;
+      return tr;
+    }
+
+    function renderRecords() {
+      recordBody.innerHTML = "";
+      if (!records.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 6;
+        td.className = "empty";
+        td.textContent = "尚未有任何紀錄，先新增第一筆吧。";
+        tr.appendChild(td);
+        recordBody.appendChild(tr);
+      } else {
+        records
+          .slice()
+          .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))
+          .forEach((record) => recordBody.appendChild(createRecordRow(record)));
+      }
+      recordCountEl.textContent = `${records.length} 筆紀錄`;
+      updateSummary();
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function detectCategory(itemName) {
+      const text = itemName.trim();
+      if (!text) return null;
+      for (const category of categories) {
+        for (const keyword of category.keywords) {
+          if (keyword && text.includes(keyword)) {
+            return { categoryName: category.name, keyword };
+          }
+        }
+      }
+      return null;
+    }
+
+    function runAutoClassify() {
+      const result = detectCategory(itemNameInput.value);
+      if (!result) {
+        autoClassifyHint.textContent = "";
+        return;
+      }
+      categorySelect.value = result.categoryName;
+      autoClassifyHint.textContent = `已依關鍵字「${result.keyword}」自動分類為「${result.categoryName}」`;
+    }
+
+    function drawExpensePie(scope) {
+      const ctx = pieCanvas.getContext("2d");
+      if (!ctx) return;
+      const now = new Date();
+      const currentYear = String(now.getFullYear());
+      const currentMonth = `${currentYear}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const expenseRecords = records.filter((r) => {
+        if (r.type !== "expense") return false;
+        const dateText = String(r.date || "");
+        if (scope === "month") return dateText.startsWith(currentMonth);
+        if (scope === "year") return dateText.startsWith(`${currentYear}-`);
+        return true;
+      });
+      const total = expenseRecords.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      ctx.clearRect(0, 0, pieCanvas.width, pieCanvas.height);
+      pieLegend.innerHTML = "";
+      pieTitle.textContent = scope === "year" ? "當年度消費分類占比" : "本月消費分類占比";
+
+      if (total <= 0) {
+        pieEmpty.textContent = scope === "year" ? "當年度尚無支出資料" : "本月尚無支出資料";
+        pieEmpty.style.display = "grid";
+        return;
+      }
+
+      pieEmpty.style.display = "none";
+      const grouped = expenseRecords.reduce((map, record) => {
+        const key = record.category || "未分類";
+        map.set(key, (map.get(key) || 0) + Number(record.amount || 0));
+        return map;
+      }, new Map());
+
+      const entries = Array.from(grouped.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      let start = -Math.PI / 2;
+      entries.forEach(([name, value], index) => {
+        const ratio = value / total;
+        const angle = ratio * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(68, 68);
+        ctx.arc(68, 68, 62, start, start + angle);
+        ctx.closePath();
+        ctx.fillStyle = PIE_COLORS[index % PIE_COLORS.length];
+        ctx.fill();
+        start += angle;
+
+        const legend = document.createElement("div");
+        legend.className = "legend-item";
+        legend.innerHTML = `
+          <span class="legend-left"><span class="legend-dot" style="background:${PIE_COLORS[index % PIE_COLORS.length]}"></span>${escapeHtml(name)}</span>
+          <span>${Math.round(ratio * 100)}%</span>
+        `;
+        pieLegend.appendChild(legend);
+      });
+    }
+
+    function setPieScope(scope) {
+      pieScope = scope;
+      pieMonthBtn.classList.toggle("active", scope === "month");
+      pieYearBtn.classList.toggle("active", scope === "year");
+      drawExpensePie(pieScope);
+    }
+
+    function switchTool(toolName) {
+      const isHighlighter = toolName === "highlighter";
+      showHighlighter.classList.toggle("active", isHighlighter);
+      showCalculator.classList.toggle("active", !isHighlighter);
+      toolHighlighter.classList.toggle("show", isHighlighter);
+      toolCalculator.classList.toggle("show", !isHighlighter);
+    }
+
+    function initLeafCanvas() {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = leafCanvas.getBoundingClientRect();
+      leafCanvas.width = Math.max(1, Math.floor(rect.width * ratio));
+      leafCanvas.height = Math.max(1, Math.floor(rect.height * ratio));
+      const ctx = leafCanvas.getContext("2d");
+      if (!ctx) return;
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "rgba(252, 234, 82, 0.5)";
+      ctx.lineWidth = 18;
+    }
+
+    function getLeafPos(event) {
+      const rect = leafCanvas.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+
+    function startDraw(event) {
+      drawing = true;
+      lastPoint = getLeafPos(event);
+    }
+
+    function draw(event) {
+      if (!drawing) return;
+      const ctx = leafCanvas.getContext("2d");
+      if (!ctx) return;
+      const next = getLeafPos(event);
+      ctx.beginPath();
+      ctx.moveTo(lastPoint.x, lastPoint.y);
+      ctx.lineTo(next.x, next.y);
+      ctx.stroke();
+      lastPoint = next;
+    }
+
+    function endDraw() {
+      drawing = false;
+    }
+
+    function safeEval(expression) {
+      const normalized = expression.replace(/%/g, "/100");
+      if (!/^[\d+\-*/().\s]+$/.test(normalized)) return null;
+      try {
+        const result = Function(`"use strict"; return (${normalized});`)();
+        return Number.isFinite(result) ? result : null;
+      } catch {
+        return null;
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const amount = Number(amountInput.value);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        alert("請輸入正確的金額。");
+        return;
+      }
+
+      const record = {
+        id: crypto.randomUUID(),
+        date: dateInput.value,
+        type: typeInput.value,
+        itemName: itemNameInput.value.trim(),
+        category: categorySelect.value,
+        amount,
+        note: noteInput.value.trim()
+      };
+      if (!record.date || !record.itemName || !record.category) {
+        alert("請完整填寫日期、項目名稱與分類。");
+        return;
+      }
+      records.push(record);
+      saveRecords();
+      renderRecords();
+      itemNameInput.value = "";
+      amountInput.value = "";
+      noteInput.value = "";
+      autoClassifyHint.textContent = "";
+      itemNameInput.focus();
+    });
+
+    form.addEventListener("reset", () => {
+      setTimeout(() => {
+        autoClassifyHint.textContent = "";
+        categorySelect.value = categories[0]?.name || "";
+      }, 0);
+    });
+
+    itemNameInput.addEventListener("input", runAutoClassify);
+    pieMonthBtn.addEventListener("click", () => setPieScope("month"));
+    pieYearBtn.addEventListener("click", () => setPieScope("year"));
+
+    recordBody.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (!target.matches(".btn-delete")) return;
+      const id = target.dataset.id;
+      if (!id) return;
+      records = records.filter((r) => r.id !== id);
+      saveRecords();
+      renderRecords();
+    });
+
+    robotBtn.addEventListener("click", () => {
+      robotPanel.classList.toggle("show");
+      robotPanel.setAttribute("aria-hidden", robotPanel.classList.contains("show") ? "false" : "true");
+      if (robotPanel.classList.contains("show")) initLeafCanvas();
+    });
+
+    showHighlighter.addEventListener("click", () => switchTool("highlighter"));
+    showCalculator.addEventListener("click", () => switchTool("calculator"));
+
+    leafCanvas.addEventListener("pointerdown", startDraw);
+    leafCanvas.addEventListener("pointermove", draw);
+    leafCanvas.addEventListener("pointerup", endDraw);
+    leafCanvas.addEventListener("pointerleave", endDraw);
+    clearLeaf.addEventListener("click", () => {
+      const ctx = leafCanvas.getContext("2d");
+      if (!ctx) return;
+      ctx.clearRect(0, 0, leafCanvas.width, leafCanvas.height);
+    });
+
+    calcGrid.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement)) return;
+      const { value, action } = target.dataset;
+      if (action === "clear") {
+        calcExpression = "0";
+      } else if (action === "delete") {
+        calcExpression = calcExpression.length > 1 ? calcExpression.slice(0, -1) : "0";
+      } else if (action === "equal") {
+        const result = safeEval(calcExpression);
+        calcExpression = result === null ? "錯誤" : String(result);
+      } else if (value) {
+        calcExpression = calcExpression === "0" || calcExpression === "錯誤" ? value : calcExpression + value;
+      }
+      calcScreen.value = calcExpression;
+    });
+
+    window.addEventListener("resize", () => {
+      if (robotPanel.classList.contains("show")) {
+        initLeafCanvas();
+      }
+    });
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+      });
+    }
+
+    setTodayDate();
+    loadCategories();
+    renderCategoryOptions();
+    loadRecords();
+    setPieScope("month");
+    renderRecords();
+    calcScreen.value = calcExpression;
+  </script>
+</body>
+</html>
