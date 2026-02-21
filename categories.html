@@ -306,8 +306,11 @@
     const SUPABASE_ANON_KEY = "money-app-supabase-anon-key";
     const SUPABASE_DEFAULT_URL = "https://wbirxxapsemulrsjjqao.supabase.co";
     const SUPABASE_DEFAULT_ANON_KEY = "sb_publishable_toooZNwiSeEG6YAHD9qrZA_0GA7xNYi";
-    const SYNC_TABLE = "app_data";
+    const SYNC_TABLE = "money_sync_state";
     const SYNC_ROW_ID = "main";
+    const SYNC_KEY_COLUMN = "sync_key";
+    const SYNC_PAYLOAD_COLUMN = "sync_payload";
+    const SYNC_UPDATED_AT_COLUMN = "sync_updated_at";
     const DEFAULT_CATEGORIES = [
       { name: "食", keywords: ["午餐", "早餐", "晚餐", "火鍋", "飲料", "咖啡", "便當"] },
       { name: "行", keywords: ["公車", "捷運", "加油", "計程車", "停車", "高鐵", "火車"] },
@@ -377,20 +380,26 @@
       const { url, anonKey } = getSupabaseConfig();
       return url.length > 0 && anonKey.length > 0;
     }
-    function getSupabaseClient() {
-      if (typeof supabase === "undefined") return null;
-      const { url, anonKey } = getSupabaseConfig();
-      if (!url || !anonKey) return null;
-      return supabase.createClient(url, anonKey);
+    function getSupabaseHeaders() {
+      const { anonKey } = getSupabaseConfig();
+      return {
+        apikey: anonKey,
+        "Content-Type": "application/json"
+      };
     }
     async function loadFromCloud() {
       if (!navigator.onLine || !isSupabaseConfigured()) return;
-      const client = getSupabaseClient();
-      if (!client) return;
       try {
-        const { data, error } = await client.from(SYNC_TABLE).select("payload").eq("id", SYNC_ROW_ID).maybeSingle();
-        if (error || !data || !data.payload) return;
-        const p = data.payload;
+        const { url } = getSupabaseConfig();
+        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
+        const response = await fetch(endpoint, {
+          method: "GET",
+          headers: getSupabaseHeaders()
+        });
+        if (!response.ok) return;
+        const rows = await response.json();
+        const p = Array.isArray(rows) && rows[0] && rows[0][SYNC_PAYLOAD_COLUMN] ? rows[0][SYNC_PAYLOAD_COLUMN] : null;
+        if (!p) return;
         if (Array.isArray(p.records)) localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(p.records));
         if (p.categories != null) localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(p.categories));
         if (p.projects != null) localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(p.projects));
@@ -398,15 +407,25 @@
     }
     async function saveToCloud() {
       if (!navigator.onLine || !isSupabaseConfigured()) return;
-      const client = getSupabaseClient();
-      if (!client) return;
       try {
+        const { url } = getSupabaseConfig();
         const records = JSON.parse(localStorage.getItem(RECORD_STORAGE_KEY) || "[]");
         const projects = JSON.parse(localStorage.getItem(PROJECT_STORAGE_KEY) || "[]");
-        await client.from(SYNC_TABLE).upsert(
-          { id: SYNC_ROW_ID, payload: { records, categories, projects }, updated_at: new Date().toISOString() },
-          { onConflict: "id" }
-        );
+        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?on_conflict=${SYNC_KEY_COLUMN}`;
+        await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            ...getSupabaseHeaders(),
+            Prefer: "resolution=merge-duplicates,return=minimal"
+          },
+          body: JSON.stringify([
+            {
+              [SYNC_KEY_COLUMN]: SYNC_ROW_ID,
+              [SYNC_PAYLOAD_COLUMN]: { records, categories, projects },
+              [SYNC_UPDATED_AT_COLUMN]: new Date().toISOString()
+            }
+          ])
+        });
       } catch (_) {}
     }
 

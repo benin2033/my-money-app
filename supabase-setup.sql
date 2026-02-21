@@ -1,22 +1,25 @@
--- 暖暖記帳 App：雲端同步用資料表
--- 在 Supabase Dashboard → SQL Editor 中執行此腳本
+-- 暖暖記帳 App：雲端同步資料表（可重複執行）
+-- 在 Supabase Dashboard → SQL Editor 執行此腳本
+-- 使用獨立表 public.money_sync_state，避免與現有業務表衝突
 
-create table if not exists public.app_data (
-  id text primary key default 'main',
-  payload jsonb not null default '{}',
-  updated_at timestamptz default now()
+create table if not exists public.money_sync_state (
+  id bigserial primary key,
+  sync_key text not null,
+  sync_payload jsonb not null default '{}'::jsonb,
+  sync_updated_at timestamptz default now()
 );
 
--- 允許匿名讀寫（使用 anon key 的用戶可同步資料）
-alter table public.app_data enable row level security;
+create unique index if not exists money_sync_state_sync_key_uidx
+  on public.money_sync_state(sync_key);
 
-drop policy if exists "Allow anon read write app_data" on public.app_data;
-create policy "Allow anon read write app_data"
-  on public.app_data for all
+-- 允許匿名讀寫（使用 anon/publishable key 可同步）
+alter table public.money_sync_state enable row level security;
+
+drop policy if exists "Allow anon read write money_sync_state" on public.money_sync_state;
+create policy "Allow anon read write money_sync_state"
+  on public.money_sync_state for all
   using (true)
   with check (true);
 
--- 強制重新整理 PostgREST schema cache，避免 REST 端點仍看不到新表
+-- 重新整理 PostgREST schema cache，避免 REST 端點看不到新欄位
 notify pgrst, 'reload schema';
-
--- 說明：payload 會存放 { records, categories, projects } 的 JSON

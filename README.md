@@ -40,7 +40,7 @@ npx serve . -l 5500
 若要讓電腦與手機共用同一份記帳資料，並支援離線時先存本機、有網路時自動上傳：
 
 1. 到 [Supabase](https://supabase.com) 建立專案。
-2. 在專案 **SQL Editor** 執行專案裡的 `supabase-setup.sql`，建立 `app_data` 表。
+2. 在專案 **SQL Editor** 執行專案裡的 `supabase-setup.sql`，建立 `money_sync_state` 表。
 3. 到 **Settings → API** 複製 **Project URL** 與 **anon public** key。
 4. 在 App 首頁點「雲端同步設定」，貼上 URL 與 anon key 後儲存。
 
