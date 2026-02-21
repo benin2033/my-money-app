@@ -890,6 +890,131 @@
         grid-template-columns: 1fr;
       }
     }
+
+    @media (max-width: 430px) {
+      body {
+        padding:
+          calc(10px + env(safe-area-inset-top))
+          8px
+          calc(70px + env(safe-area-inset-bottom));
+      }
+
+      .app {
+        padding: 0 6px;
+        gap: 10px;
+      }
+
+      .header {
+        padding: 14px 14px 8px;
+      }
+
+      h1 {
+        font-size: 1.22rem;
+      }
+
+      .subtitle {
+        font-size: 0.82rem;
+      }
+
+      .summary-grid,
+      .form,
+      .list-wrap {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .summary-grid {
+        gap: 10px;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .stat {
+        padding: 10px;
+      }
+
+      .form {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .col-2,
+      .col-3,
+      .actions {
+        grid-column: span 1;
+      }
+
+      .records {
+        border: none;
+        background: transparent;
+      }
+
+      .records thead {
+        display: none;
+      }
+
+      .records tbody {
+        display: grid;
+        gap: 10px;
+      }
+
+      .records tr {
+        display: grid;
+        gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+        background: #fffaf4;
+      }
+
+      .records td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        border-bottom: none;
+        padding: 2px 0;
+        font-size: 0.86rem;
+      }
+
+      .records td::before {
+        color: var(--subtle);
+        font-size: 0.78rem;
+        flex: 0 0 62px;
+      }
+
+      .records td:nth-child(1)::before { content: "日期"; }
+      .records td:nth-child(2)::before { content: "類型"; }
+      .records td:nth-child(3)::before { content: "項目"; }
+      .records td:nth-child(4)::before { content: "備註"; }
+      .records td:nth-child(5)::before { content: "金額"; }
+      .records td:nth-child(6)::before { content: "操作"; }
+
+      .records td:nth-child(5) {
+        display: flex;
+      }
+
+      .records td.empty {
+        display: block;
+        text-align: center;
+        padding: 8px 0;
+      }
+
+      .records td.empty::before {
+        content: "";
+        display: none;
+      }
+
+      .robot-btn {
+        width: 54px;
+        height: 54px;
+        right: 12px;
+        bottom: calc(12px + env(safe-area-inset-bottom));
+      }
+    }
   </style>
 </head>
 <body>
