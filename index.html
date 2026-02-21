@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#b57542" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -10,6 +10,7 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./app-icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./app-icon.svg" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <title>暖系記帳 App</title>
   <style>
     :root {
@@ -86,8 +87,10 @@
     }
 
     .app {
-      width: min(1080px, 100%);
+      width: 100%;
+      max-width: 1080px;
       margin: 0 auto;
+      padding: 0 16px;
       position: relative;
       z-index: 1;
       display: grid;
@@ -134,7 +137,8 @@
     select {
       border: 1px solid var(--line);
       border-radius: 10px;
-      padding: 10px 12px;
+      padding: 12px 14px;
+      min-height: 46px;
       font-size: 0.94rem;
       color: var(--text);
       background: #fff9f2;
@@ -776,6 +780,34 @@
       font-weight: 700;
     }
 
+    .sync-status {
+      font-size: 0.8rem;
+      color: var(--subtle);
+      align-self: center;
+    }
+    .sync-status.online { color: var(--income); }
+    .sync-status.offline { color: var(--expense); }
+
+    .sync-config-panel {
+      padding: 16px 22px;
+    }
+    .sync-config-title {
+      margin: 0 0 12px;
+      font-size: 0.95rem;
+      color: var(--text);
+      font-weight: 700;
+    }
+    .sync-config-fields {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .sync-config-hint {
+      margin: 0;
+      font-size: 0.82rem;
+      color: var(--subtle);
+    }
+
     @media (max-width: 860px) {
       .summary-grid {
         grid-template-columns: 1fr;
@@ -802,6 +834,20 @@
         display: none;
       }
     }
+
+    @media (max-width: 560px) {
+      .actions,
+      .header-right,
+      .scope-switch,
+      .tool-switch {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .input-with-btn {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -813,8 +859,26 @@
           <p class="subtitle">大地色系、花園氛圍，記下每一筆生活收支</p>
         </div>
         <div class="header-right">
+          <span id="syncStatus" class="sync-status" title="雲端同步狀態"></span>
+          <button type="button" id="syncConfigToggle" class="btn-link">雲端同步設定</button>
           <a class="btn-link" href="categories.html">管理類別</a>
         </div>
+      </div>
+
+      <div id="syncConfigPanel" class="sync-config-panel card" hidden>
+        <p class="sync-config-title">Supabase 雲端同步（電腦與手機共用同一份資料）</p>
+        <div class="sync-config-fields">
+          <div class="field">
+            <label for="supabaseUrl">Supabase 專案 URL</label>
+            <input id="supabaseUrl" type="url" placeholder="https://xxxxx.supabase.co" />
+          </div>
+          <div class="field">
+            <label for="supabaseAnonKey">Anon Key（公開金鑰）</label>
+            <input id="supabaseAnonKey" type="text" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." autocomplete="off" />
+          </div>
+          <button type="button" id="saveSupabaseConfig" class="btn-primary">儲存設定</button>
+        </div>
+        <p class="sync-config-hint">離線時會先存於本機，有網路時會自動上傳並拉取最新資料。多裝置以最後同步的為準。</p>
       </div>
 
       <div class="safety-card">
@@ -1022,6 +1086,12 @@
     const RECORD_STORAGE_KEY = "money-app-records-v1";
     const CATEGORY_STORAGE_KEY = "money-app-categories-v1";
     const PROJECT_STORAGE_KEY = "money-app-projects-v1";
+    const SUPABASE_URL_KEY = "money-app-supabase-url";
+    const SUPABASE_ANON_KEY = "money-app-supabase-anon-key";
+    const SUPABASE_DEFAULT_URL = "https://wbirxxapsemulrsjjqao.supabase.co";
+    const SUPABASE_DEFAULT_ANON_KEY = "sb_publishable_toooZNwiSeEG6YAHD9qrZA_0GA7xNYi";
+    const SYNC_TABLE = "app_data";
+    const SYNC_ROW_ID = "main";
     const SUPPORT_INCOME_CATEGORY = "外部支援 (老公)";
     const INCOME_CATEGORIES = ["固定薪資", SUPPORT_INCOME_CATEGORY, "其他收入"];
     const DEFAULT_CATEGORIES = [
@@ -1265,6 +1335,89 @@
     function saveProjects() {
       ensureProjectOrder();
       localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
+      saveToCloud();
+    }
+
+    function getSupabaseConfig() {
+      const url = (localStorage.getItem(SUPABASE_URL_KEY) || SUPABASE_DEFAULT_URL).trim();
+      const anonKey = (localStorage.getItem(SUPABASE_ANON_KEY) || SUPABASE_DEFAULT_ANON_KEY).trim();
+      return { url, anonKey };
+    }
+
+    function isSupabaseConfigured() {
+      const { url, anonKey } = getSupabaseConfig();
+      return url.length > 0 && anonKey.length > 0;
+    }
+
+    function getSupabaseClient() {
+      if (typeof supabase === "undefined") return null;
+      const { url, anonKey } = getSupabaseConfig();
+      if (!url || !anonKey) return null;
+      return supabase.createClient(url, anonKey);
+    }
+
+    function updateSyncStatus() {
+      const el = document.getElementById("syncStatus");
+      if (!el) return;
+      if (!isSupabaseConfigured()) {
+        el.textContent = "未設定雲端";
+        el.className = "sync-status";
+        return;
+      }
+      if (navigator.onLine) {
+        el.textContent = "已連線";
+        el.className = "sync-status online";
+      } else {
+        el.textContent = "離線（待同步）";
+        el.className = "sync-status offline";
+      }
+    }
+
+    async function loadFromCloud() {
+      if (!navigator.onLine || !isSupabaseConfigured()) return;
+      const client = getSupabaseClient();
+      if (!client) return;
+      try {
+        const { data, error } = await client.from(SYNC_TABLE).select("payload").eq("id", SYNC_ROW_ID).maybeSingle();
+        if (error || !data || !data.payload) return;
+        const payload = data.payload;
+        const cloudRecords = Array.isArray(payload.records) ? payload.records : [];
+        const cloudCategories = payload.categories != null ? payload.categories : null;
+        const cloudProjects = payload.projects != null ? payload.projects : null;
+
+        if (cloudCategories != null) {
+          localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(cloudCategories));
+          categories = normalizeCategories(cloudCategories);
+        }
+        if (cloudProjects != null) {
+          localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(cloudProjects));
+          projects = normalizeProjects(cloudProjects);
+        }
+        if (cloudRecords.length >= 0) {
+          localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(cloudRecords));
+          records = migrateRecords(cloudRecords);
+        }
+        saveRecords();
+        saveCategories();
+        saveProjects();
+      } catch (_) {}
+    }
+
+    async function saveToCloud() {
+      if (!navigator.onLine || !isSupabaseConfigured()) return;
+      const client = getSupabaseClient();
+      if (!client) return;
+      try {
+        const payload = {
+          records: records,
+          categories: categories,
+          projects: projects
+        };
+        await client.from(SYNC_TABLE).upsert(
+          { id: SYNC_ROW_ID, payload, updated_at: new Date().toISOString() },
+          { onConflict: "id" }
+        );
+      } catch (_) {}
     }
 
     function parseKeywords(raw) {
@@ -1358,6 +1511,7 @@
 
     function saveRecords() {
       localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(records));
+      saveToCloud();
     }
 
     function loadRecords() {
@@ -1979,17 +2133,69 @@
       });
     }
 
-    setTodayDate();
-    loadCategories();
-    loadProjects();
-    setType("income");
-    setProjectManagerOpen(false);
-    renderProjectOptions();
-    renderProjectManager();
-    loadRecords();
-    setPieScope("month");
-    renderRecords();
-    calcScreen.value = calcExpression;
+    const syncConfigToggle = document.getElementById("syncConfigToggle");
+    const syncConfigPanel = document.getElementById("syncConfigPanel");
+    const supabaseUrlInput = document.getElementById("supabaseUrl");
+    const supabaseAnonKeyInput = document.getElementById("supabaseAnonKey");
+    const saveSupabaseConfigBtn = document.getElementById("saveSupabaseConfig");
+
+    if (syncConfigToggle && syncConfigPanel) {
+      syncConfigToggle.addEventListener("click", () => {
+        const show = syncConfigPanel.hidden;
+        syncConfigPanel.hidden = !show;
+        if (show) {
+          const cfg = getSupabaseConfig();
+          supabaseUrlInput.value = cfg.url;
+          supabaseAnonKeyInput.value = cfg.anonKey;
+        }
+      });
+    }
+    if (saveSupabaseConfigBtn && supabaseUrlInput && supabaseAnonKeyInput) {
+      saveSupabaseConfigBtn.addEventListener("click", () => {
+        const url = supabaseUrlInput.value.trim();
+        const anonKey = supabaseAnonKeyInput.value.trim();
+        if (!url || !anonKey) {
+          alert("請填寫 Supabase URL 與 Anon Key。");
+          return;
+        }
+        localStorage.setItem(SUPABASE_URL_KEY, url);
+        localStorage.setItem(SUPABASE_ANON_KEY, anonKey);
+        updateSyncStatus();
+        alert("已儲存，之後開啟 App 會從雲端載入，變更也會自動同步。");
+      });
+    }
+
+    window.addEventListener("online", () => {
+      updateSyncStatus();
+      saveToCloud().then(() => loadFromCloud()).then(() => {
+        loadRecords();
+        loadCategories();
+        loadProjects();
+        renderRecords();
+        renderCategoryOptions();
+        renderProjectOptions();
+        renderProjectManager();
+      });
+    });
+    window.addEventListener("offline", updateSyncStatus);
+
+    (async function init() {
+      setTodayDate();
+      loadCategories();
+      loadProjects();
+      await loadFromCloud();
+      loadRecords();
+      loadCategories();
+      loadProjects();
+      setType("income");
+      setProjectManagerOpen(false);
+      renderProjectOptions();
+      renderProjectManager();
+      setPieScope("month");
+      renderRecords();
+      calcScreen.value = calcExpression;
+      updateSyncStatus();
+    })();
   </script>
 </body>
 </html>

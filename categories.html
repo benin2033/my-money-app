@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#b57542" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./app-icon.svg" type="image/svg+xml" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <title>類別管理 - 記帳 App</title>
   <style>
     :root {
@@ -299,6 +300,14 @@
 
   <script>
     const CATEGORY_STORAGE_KEY = "money-app-categories-v1";
+    const RECORD_STORAGE_KEY = "money-app-records-v1";
+    const PROJECT_STORAGE_KEY = "money-app-projects-v1";
+    const SUPABASE_URL_KEY = "money-app-supabase-url";
+    const SUPABASE_ANON_KEY = "money-app-supabase-anon-key";
+    const SUPABASE_DEFAULT_URL = "https://wbirxxapsemulrsjjqao.supabase.co";
+    const SUPABASE_DEFAULT_ANON_KEY = "sb_publishable_toooZNwiSeEG6YAHD9qrZA_0GA7xNYi";
+    const SYNC_TABLE = "app_data";
+    const SYNC_ROW_ID = "main";
     const DEFAULT_CATEGORIES = [
       { name: "食", keywords: ["午餐", "早餐", "晚餐", "火鍋", "飲料", "咖啡", "便當"] },
       { name: "行", keywords: ["公車", "捷運", "加油", "計程車", "停車", "高鐵", "火車"] },
@@ -356,6 +365,49 @@
 
     function saveCategories() {
       localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(categories));
+      saveToCloud();
+    }
+
+    function getSupabaseConfig() {
+      const url = (localStorage.getItem(SUPABASE_URL_KEY) || SUPABASE_DEFAULT_URL).trim();
+      const anonKey = (localStorage.getItem(SUPABASE_ANON_KEY) || SUPABASE_DEFAULT_ANON_KEY).trim();
+      return { url, anonKey };
+    }
+    function isSupabaseConfigured() {
+      const { url, anonKey } = getSupabaseConfig();
+      return url.length > 0 && anonKey.length > 0;
+    }
+    function getSupabaseClient() {
+      if (typeof supabase === "undefined") return null;
+      const { url, anonKey } = getSupabaseConfig();
+      if (!url || !anonKey) return null;
+      return supabase.createClient(url, anonKey);
+    }
+    async function loadFromCloud() {
+      if (!navigator.onLine || !isSupabaseConfigured()) return;
+      const client = getSupabaseClient();
+      if (!client) return;
+      try {
+        const { data, error } = await client.from(SYNC_TABLE).select("payload").eq("id", SYNC_ROW_ID).maybeSingle();
+        if (error || !data || !data.payload) return;
+        const p = data.payload;
+        if (Array.isArray(p.records)) localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(p.records));
+        if (p.categories != null) localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(p.categories));
+        if (p.projects != null) localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(p.projects));
+      } catch (_) {}
+    }
+    async function saveToCloud() {
+      if (!navigator.onLine || !isSupabaseConfigured()) return;
+      const client = getSupabaseClient();
+      if (!client) return;
+      try {
+        const records = JSON.parse(localStorage.getItem(RECORD_STORAGE_KEY) || "[]");
+        const projects = JSON.parse(localStorage.getItem(PROJECT_STORAGE_KEY) || "[]");
+        await client.from(SYNC_TABLE).upsert(
+          { id: SYNC_ROW_ID, payload: { records, categories, projects }, updated_at: new Date().toISOString() },
+          { onConflict: "id" }
+        );
+      } catch (_) {}
     }
 
     function renderCategories() {
@@ -597,8 +649,11 @@
       });
     }
 
-    loadCategories();
-    renderCategories();
+    (async function init() {
+      await loadFromCloud();
+      loadCategories();
+      renderCategories();
+    })();
   </script>
 </body>
 </html>
