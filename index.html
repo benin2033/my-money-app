@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#b57542" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -10,6 +10,7 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./app-icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./app-icon.svg" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <title>暖系記帳 App</title>
   <style>
     :root {
@@ -44,7 +45,10 @@
         linear-gradient(160deg, #f9f1e5 0%, #f0dfcb 100%);
       position: relative;
       overflow-x: hidden;
-      padding: 30px 14px 80px;
+      padding:
+        calc(16px + env(safe-area-inset-top))
+        14px
+        calc(80px + env(safe-area-inset-bottom));
     }
 
     body::before,
@@ -86,8 +90,10 @@
     }
 
     .app {
-      width: min(1080px, 100%);
+      width: 100%;
+      max-width: 1080px;
       margin: 0 auto;
+      padding: 0 16px;
       position: relative;
       z-index: 1;
       display: grid;
@@ -134,7 +140,8 @@
     select {
       border: 1px solid var(--line);
       border-radius: 10px;
-      padding: 10px 12px;
+      padding: 12px 14px;
+      min-height: 46px;
       font-size: 0.94rem;
       color: var(--text);
       background: #fff9f2;
@@ -776,6 +783,73 @@
       font-weight: 700;
     }
 
+    .sync-status {
+      font-size: 0.8rem;
+      color: var(--subtle);
+      align-self: center;
+    }
+    .sync-status.online { color: var(--income); }
+    .sync-status.offline { color: var(--expense); }
+
+    .sync-config-panel {
+      padding: 16px 22px;
+    }
+    .sync-config-title {
+      margin: 0 0 12px;
+      font-size: 0.95rem;
+      color: var(--text);
+      font-weight: 700;
+    }
+    .sync-config-fields {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .sync-config-hint {
+      margin: 0;
+      font-size: 0.82rem;
+      color: var(--subtle);
+    }
+
+    .install-banner {
+      width: 100%;
+      max-width: 1080px;
+      margin: 0 auto 10px;
+      padding: 0 16px;
+      position: relative;
+      z-index: 2;
+      display: none;
+    }
+
+    .install-banner.show {
+      display: block;
+    }
+
+    .install-banner-inner {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff7ec;
+      box-shadow: var(--shadow);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 0.84rem;
+      color: #6d574a;
+    }
+
+    .install-banner-actions {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    body.standalone .install-banner {
+      display: none !important;
+    }
+
     @media (max-width: 860px) {
       .summary-grid {
         grid-template-columns: 1fr;
@@ -802,9 +876,32 @@
         display: none;
       }
     }
+
+    @media (max-width: 560px) {
+      .actions,
+      .header-right,
+      .scope-switch,
+      .tool-switch {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .input-with-btn {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
+  <div id="installBanner" class="install-banner" aria-live="polite">
+    <div class="install-banner-inner">
+      <span id="installText">安裝到主畫面可像 App 一樣開啟（無網址列）。</span>
+      <div class="install-banner-actions">
+        <button id="installBtn" type="button" class="btn-primary" hidden>安裝 App</button>
+        <button id="dismissInstallBtn" type="button" class="btn-ghost">稍後</button>
+      </div>
+    </div>
+  </div>
   <main class="app">
     <section class="card">
       <div class="header">
@@ -813,8 +910,26 @@
           <p class="subtitle">大地色系、花園氛圍，記下每一筆生活收支</p>
         </div>
         <div class="header-right">
+          <span id="syncStatus" class="sync-status" title="雲端同步狀態"></span>
+          <button type="button" id="syncConfigToggle" class="btn-link">雲端同步設定</button>
           <a class="btn-link" href="categories.html">管理類別</a>
         </div>
+      </div>
+
+      <div id="syncConfigPanel" class="sync-config-panel card" hidden>
+        <p class="sync-config-title">Supabase 雲端同步（電腦與手機共用同一份資料）</p>
+        <div class="sync-config-fields">
+          <div class="field">
+            <label for="supabaseUrl">Supabase 專案 URL</label>
+            <input id="supabaseUrl" type="url" placeholder="https://xxxxx.supabase.co" />
+          </div>
+          <div class="field">
+            <label for="supabaseAnonKey">Anon Key（公開金鑰）</label>
+            <input id="supabaseAnonKey" type="text" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." autocomplete="off" />
+          </div>
+          <button type="button" id="saveSupabaseConfig" class="btn-primary">儲存設定</button>
+        </div>
+        <p class="sync-config-hint">離線時會先存於本機，有網路時會自動上傳並拉取最新資料。多裝置以最後同步的為準。</p>
       </div>
 
       <div class="safety-card">
@@ -1022,6 +1137,15 @@
     const RECORD_STORAGE_KEY = "money-app-records-v1";
     const CATEGORY_STORAGE_KEY = "money-app-categories-v1";
     const PROJECT_STORAGE_KEY = "money-app-projects-v1";
+    const SUPABASE_URL_KEY = "money-app-supabase-url";
+    const SUPABASE_ANON_KEY = "money-app-supabase-anon-key";
+    const SUPABASE_DEFAULT_URL = "https://wbirxxapsemulrsjjqao.supabase.co";
+    const SUPABASE_DEFAULT_ANON_KEY = "sb_publishable_toooZNwiSeEG6YAHD9qrZA_0GA7xNYi";
+    const SYNC_TABLE = "money_sync_state";
+    const SYNC_ROW_ID = "main";
+    const SYNC_KEY_COLUMN = "sync_key";
+    const SYNC_PAYLOAD_COLUMN = "sync_payload";
+    const SYNC_UPDATED_AT_COLUMN = "sync_updated_at";
     const SUPPORT_INCOME_CATEGORY = "外部支援 (老公)";
     const INCOME_CATEGORIES = ["固定薪資", SUPPORT_INCOME_CATEGORY, "其他收入"];
     const DEFAULT_CATEGORIES = [
@@ -1265,6 +1389,105 @@
     function saveProjects() {
       ensureProjectOrder();
       localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
+      saveToCloud();
+    }
+
+    function getSupabaseConfig() {
+      const url = (localStorage.getItem(SUPABASE_URL_KEY) || SUPABASE_DEFAULT_URL).trim();
+      const anonKey = (localStorage.getItem(SUPABASE_ANON_KEY) || SUPABASE_DEFAULT_ANON_KEY).trim();
+      return { url, anonKey };
+    }
+
+    function isSupabaseConfigured() {
+      const { url, anonKey } = getSupabaseConfig();
+      return url.length > 0 && anonKey.length > 0;
+    }
+
+    function getSupabaseHeaders() {
+      const { anonKey } = getSupabaseConfig();
+      return {
+        apikey: anonKey,
+        "Content-Type": "application/json"
+      };
+    }
+
+    function updateSyncStatus() {
+      const el = document.getElementById("syncStatus");
+      if (!el) return;
+      if (!isSupabaseConfigured()) {
+        el.textContent = "未設定雲端";
+        el.className = "sync-status";
+        return;
+      }
+      if (navigator.onLine) {
+        el.textContent = "已連線";
+        el.className = "sync-status online";
+      } else {
+        el.textContent = "離線（待同步）";
+        el.className = "sync-status offline";
+      }
+    }
+
+    async function loadFromCloud() {
+      if (!navigator.onLine || !isSupabaseConfigured()) return;
+      try {
+        const { url } = getSupabaseConfig();
+        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
+        const response = await fetch(endpoint, {
+          method: "GET",
+          headers: getSupabaseHeaders()
+        });
+        if (!response.ok) return;
+        const rows = await response.json();
+        const payload = Array.isArray(rows) && rows[0] && rows[0][SYNC_PAYLOAD_COLUMN] ? rows[0][SYNC_PAYLOAD_COLUMN] : null;
+        if (!payload) return;
+        const cloudRecords = Array.isArray(payload.records) ? payload.records : [];
+        const cloudCategories = payload.categories != null ? payload.categories : null;
+        const cloudProjects = payload.projects != null ? payload.projects : null;
+
+        if (cloudCategories != null) {
+          localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(cloudCategories));
+          categories = normalizeCategories(cloudCategories);
+        }
+        if (cloudProjects != null) {
+          localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(cloudProjects));
+          projects = normalizeProjects(cloudProjects);
+        }
+        if (cloudRecords.length >= 0) {
+          localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(cloudRecords));
+          records = migrateRecords(cloudRecords);
+        }
+        saveRecords();
+        saveCategories();
+        saveProjects();
+      } catch (_) {}
+    }
+
+    async function saveToCloud() {
+      if (!navigator.onLine || !isSupabaseConfigured()) return;
+      try {
+        const { url } = getSupabaseConfig();
+        const payload = {
+          records: records,
+          categories: categories,
+          projects: projects
+        };
+        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?on_conflict=${SYNC_KEY_COLUMN}`;
+        await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            ...getSupabaseHeaders(),
+            Prefer: "resolution=merge-duplicates,return=minimal"
+          },
+          body: JSON.stringify([
+            {
+              [SYNC_KEY_COLUMN]: SYNC_ROW_ID,
+              [SYNC_PAYLOAD_COLUMN]: payload,
+              [SYNC_UPDATED_AT_COLUMN]: new Date().toISOString()
+            }
+          ])
+        });
+      } catch (_) {}
     }
 
     function parseKeywords(raw) {
@@ -1358,6 +1581,7 @@
 
     function saveRecords() {
       localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(records));
+      saveToCloud();
     }
 
     function loadRecords() {
@@ -1979,17 +2203,139 @@
       });
     }
 
-    setTodayDate();
-    loadCategories();
-    loadProjects();
-    setType("income");
-    setProjectManagerOpen(false);
-    renderProjectOptions();
-    renderProjectManager();
-    loadRecords();
-    setPieScope("month");
-    renderRecords();
-    calcScreen.value = calcExpression;
+    const syncConfigToggle = document.getElementById("syncConfigToggle");
+    const syncConfigPanel = document.getElementById("syncConfigPanel");
+    const supabaseUrlInput = document.getElementById("supabaseUrl");
+    const supabaseAnonKeyInput = document.getElementById("supabaseAnonKey");
+    const saveSupabaseConfigBtn = document.getElementById("saveSupabaseConfig");
+    const installBanner = document.getElementById("installBanner");
+    const installText = document.getElementById("installText");
+    const installBtn = document.getElementById("installBtn");
+    const dismissInstallBtn = document.getElementById("dismissInstallBtn");
+    const INSTALL_DISMISS_KEY = "money-app-install-banner-dismissed-v1";
+    let deferredInstallPrompt = null;
+
+    function isStandaloneMode() {
+      return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    }
+
+    function isIosDevice() {
+      const ua = navigator.userAgent || "";
+      return /iPad|iPhone|iPod/.test(ua);
+    }
+
+    function shouldShowInstallBanner() {
+      if (isStandaloneMode()) return false;
+      return localStorage.getItem(INSTALL_DISMISS_KEY) !== "1";
+    }
+
+    function renderInstallBanner() {
+      if (!installBanner || !installBtn || !installText) return;
+      if (!shouldShowInstallBanner()) {
+        installBanner.classList.remove("show");
+        return;
+      }
+
+      if (deferredInstallPrompt) {
+        installText.textContent = "安裝到主畫面後，會像 App 一樣開啟（無網址列）。";
+        installBtn.hidden = false;
+      } else if (isIosDevice()) {
+        installText.textContent = "iPhone 請點 Safari 分享按鈕，再選「加入主畫面」。";
+        installBtn.hidden = true;
+      } else {
+        installText.textContent = "可將此頁加入主畫面，像 App 一樣開啟。";
+        installBtn.hidden = true;
+      }
+      installBanner.classList.add("show");
+    }
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      renderInstallBanner();
+    });
+
+    if (installBtn) {
+      installBtn.addEventListener("click", async () => {
+        if (!deferredInstallPrompt) return;
+        deferredInstallPrompt.prompt();
+        try {
+          await deferredInstallPrompt.userChoice;
+        } catch (_) {}
+        deferredInstallPrompt = null;
+        localStorage.setItem(INSTALL_DISMISS_KEY, "1");
+        renderInstallBanner();
+      });
+    }
+
+    if (dismissInstallBtn) {
+      dismissInstallBtn.addEventListener("click", () => {
+        localStorage.setItem(INSTALL_DISMISS_KEY, "1");
+        renderInstallBanner();
+      });
+    }
+
+    if (syncConfigToggle && syncConfigPanel) {
+      syncConfigToggle.addEventListener("click", () => {
+        const show = syncConfigPanel.hidden;
+        syncConfigPanel.hidden = !show;
+        if (show) {
+          const cfg = getSupabaseConfig();
+          supabaseUrlInput.value = cfg.url;
+          supabaseAnonKeyInput.value = cfg.anonKey;
+        }
+      });
+    }
+    if (saveSupabaseConfigBtn && supabaseUrlInput && supabaseAnonKeyInput) {
+      saveSupabaseConfigBtn.addEventListener("click", () => {
+        const url = supabaseUrlInput.value.trim();
+        const anonKey = supabaseAnonKeyInput.value.trim();
+        if (!url || !anonKey) {
+          alert("請填寫 Supabase URL 與 Anon Key。");
+          return;
+        }
+        localStorage.setItem(SUPABASE_URL_KEY, url);
+        localStorage.setItem(SUPABASE_ANON_KEY, anonKey);
+        updateSyncStatus();
+        alert("已儲存，之後開啟 App 會從雲端載入，變更也會自動同步。");
+      });
+    }
+
+    window.addEventListener("online", () => {
+      updateSyncStatus();
+      saveToCloud().then(() => loadFromCloud()).then(() => {
+        loadRecords();
+        loadCategories();
+        loadProjects();
+        renderRecords();
+        renderCategoryOptions();
+        renderProjectOptions();
+        renderProjectManager();
+      });
+    });
+    window.addEventListener("offline", updateSyncStatus);
+
+    (async function init() {
+      if (isStandaloneMode()) {
+        document.body.classList.add("standalone");
+      }
+      renderInstallBanner();
+      setTodayDate();
+      loadCategories();
+      loadProjects();
+      await loadFromCloud();
+      loadRecords();
+      loadCategories();
+      loadProjects();
+      setType("income");
+      setProjectManagerOpen(false);
+      renderProjectOptions();
+      renderProjectManager();
+      setPieScope("month");
+      renderRecords();
+      calcScreen.value = calcExpression;
+      updateSyncStatus();
+    })();
   </script>
 </body>
 </html>
