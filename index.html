@@ -178,6 +178,36 @@
       gap: 12px;
     }
 
+    .safety-card {
+      margin: 0 22px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff6ea;
+      padding: 10px 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .safety-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .safety-title {
+      margin: 0;
+      font-size: 0.86rem;
+      color: var(--subtle);
+    }
+
+    .safety-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #5e4a3e;
+    }
+
     .summary {
       display: grid;
       gap: 12px;
@@ -275,6 +305,31 @@
       color: var(--subtle);
     }
 
+    .income-analysis {
+      width: 100%;
+      margin-top: 4px;
+      border-top: 1px dashed var(--line);
+      padding-top: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .income-analysis-title {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--subtle);
+      font-weight: 700;
+    }
+
+    .income-analysis-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #6b5649;
+      gap: 8px;
+    }
+
     .legend-item {
       display: flex;
       align-items: center;
@@ -318,10 +373,151 @@
       color: var(--subtle);
     }
 
+    .type-switch {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .type-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff8f0;
+    }
+
     .hint {
       font-size: 0.8rem;
       color: var(--subtle);
       min-height: 18px;
+    }
+
+    .input-with-btn {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .btn-inline {
+      padding: 10px 12px;
+      font-size: 0.86rem;
+      white-space: nowrap;
+    }
+
+    .btn-inline.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff8f0;
+    }
+
+    .split-panel {
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.5);
+      display: grid;
+      gap: 10px;
+    }
+
+    .split-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .split-hint {
+      margin: 0;
+      color: var(--subtle);
+      font-size: 0.83rem;
+      min-height: 16px;
+    }
+
+    .project-manager {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.55);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .project-manager-toggle {
+      justify-self: start;
+    }
+
+    .project-manager-title {
+      margin: 0;
+      font-size: 0.92rem;
+      color: #725748;
+      font-weight: 700;
+    }
+
+    .project-form-grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1.4fr 0.7fr 2fr auto;
+    }
+
+    .project-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .project-item {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fffaf4;
+      padding: 8px 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.86rem;
+    }
+
+    .project-item.dragging {
+      opacity: 0.5;
+    }
+
+    .project-item.drag-over {
+      box-shadow: inset 0 0 0 2px rgba(181, 117, 66, 0.24);
+      background: #f8eedf;
+    }
+
+    .project-view {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .drag-handle {
+      display: inline-block;
+      color: #9c7f6e;
+      user-select: none;
+      cursor: grab;
+      font-size: 0.95rem;
+      line-height: 1;
+    }
+
+    .project-item-actions {
+      display: inline-flex;
+      gap: 6px;
+    }
+
+    .project-inline-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 0.6fr 2fr;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .project-inline-grid input {
+      padding: 6px 8px;
+      font-size: 0.82rem;
+    }
+
+    .tiny-btn {
+      font-size: 0.8rem;
+      padding: 6px 8px;
     }
 
     .col-2 { grid-column: span 2; }
@@ -412,6 +608,25 @@
       color: #7b5f50;
       background: #f1dfc8;
       font-weight: 600;
+    }
+
+    .tag-support {
+      color: #8a4c2a;
+      background: rgba(255, 201, 143, 0.38);
+      border: 1px solid rgba(221, 147, 87, 0.45);
+      font-weight: 700;
+    }
+
+    .tag-project {
+      color: #4e6d8e;
+      background: rgba(191, 224, 255, 0.68);
+      border: 1px solid rgba(116, 169, 224, 0.35);
+      font-weight: 600;
+    }
+
+    .project-row {
+      background: linear-gradient(120deg, rgba(210, 235, 255, 0.36), rgba(220, 243, 255, 0.2));
+      backdrop-filter: blur(4px);
     }
 
     .item-wrap {
@@ -602,6 +817,13 @@
         </div>
       </div>
 
+      <div class="safety-card">
+        <div class="safety-head">
+          <p class="safety-title">本月可用餘額</p>
+          <span id="monthAvailableValue" class="safety-value">$0</span>
+        </div>
+      </div>
+
       <div class="summary-grid">
         <div class="summary">
           <div class="stat">
@@ -636,6 +858,11 @@
             <div id="pieEmpty" class="pie-empty">尚無支出資料</div>
           </div>
           <div id="pieLegend" class="pie-legend"></div>
+          <div id="incomeAnalysis" class="income-analysis">
+            <p class="income-analysis-title">收入分析（本期）</p>
+            <div class="income-analysis-item"><span>固定薪資</span><span id="salaryIncomeValue">$0</span></div>
+            <div class="income-analysis-item"><span>補償性支援</span><span id="supportIncomeValue">$0</span></div>
+          </div>
         </div>
       </div>
 
@@ -647,10 +874,11 @@
 
         <div class="field col-2">
           <label for="type">類型</label>
-          <select id="type" name="type">
-            <option value="income">收入</option>
-            <option value="expense">支出</option>
-          </select>
+          <input id="type" name="type" type="hidden" value="income" />
+          <div class="type-switch">
+            <button id="typeIncomeBtn" type="button" class="type-btn active">收入</button>
+            <button id="typeExpenseBtn" type="button" class="type-btn">支出</button>
+          </div>
         </div>
 
         <div class="field col-3">
@@ -665,13 +893,49 @@
         </div>
 
         <div class="field col-2">
+          <label for="project">專案</label>
+          <select id="project" name="project"></select>
+        </div>
+
+        <div class="field col-2">
           <label for="amount">金額</label>
-          <input id="amount" name="amount" type="number" min="1" step="1" placeholder="0" required />
+          <div class="input-with-btn">
+            <input id="amount" name="amount" type="number" min="1" step="1" placeholder="0" required />
+            <button type="button" id="splitToggleBtn" class="btn-inline">拆分</button>
+          </div>
         </div>
 
         <div class="field col-3">
           <label for="note">備註（可選）</label>
           <input id="note" name="note" type="text" placeholder="簡短說明" />
+        </div>
+
+        <div id="splitPanel" class="split-panel col-12" hidden>
+          <div class="split-grid">
+            <div class="field">
+              <label for="myShare">我的部分</label>
+              <input id="myShare" type="number" min="0" step="1" placeholder="0" readonly />
+            </div>
+            <div class="field">
+              <label for="susieShare">Susie 的部分</label>
+              <input id="susieShare" type="number" min="0" step="1" placeholder="0" />
+            </div>
+          </div>
+          <p id="splitHint" class="split-hint"></p>
+        </div>
+
+        <div class="field col-12">
+          <button type="button" id="projectManagerToggleBtn" class="btn-inline project-manager-toggle">展開專案管理</button>
+          <div id="projectManagerPanel" class="project-manager" hidden>
+            <p class="project-manager-title">專案管理（可新增 / 修改 / 刪除）</p>
+            <div class="project-form-grid">
+              <input id="projectNameInput" type="text" placeholder="專案名稱" />
+              <input id="projectIconInput" type="text" placeholder="圖示" />
+              <input id="projectKeywordsInput" type="text" placeholder="關鍵字（逗號分隔）" />
+              <button type="button" id="addProjectBtn" class="btn-inline">新增專案</button>
+            </div>
+            <div id="projectList" class="project-list"></div>
+          </div>
         </div>
 
         <div class="actions col-12">
@@ -757,6 +1021,9 @@
   <script>
     const RECORD_STORAGE_KEY = "money-app-records-v1";
     const CATEGORY_STORAGE_KEY = "money-app-categories-v1";
+    const PROJECT_STORAGE_KEY = "money-app-projects-v1";
+    const SUPPORT_INCOME_CATEGORY = "外部支援 (老公)";
+    const INCOME_CATEGORIES = ["固定薪資", SUPPORT_INCOME_CATEGORY, "其他收入"];
     const DEFAULT_CATEGORIES = [
       { name: "食", keywords: ["午餐", "早餐", "晚餐", "火鍋", "飲料", "咖啡", "便當"] },
       { name: "行", keywords: ["公車", "捷運", "加油", "計程車", "停車", "高鐵", "火車"] },
@@ -765,15 +1032,38 @@
       { name: "育樂", keywords: ["電影", "課程", "書籍", "遊戲", "旅行"] }
     ];
     const PIE_COLORS = ["#d58a61", "#8ea96f", "#d7a84a", "#c97b6b", "#8e6ea6", "#80a7b2", "#b08866"];
+    const DEFAULT_PROJECTS = [
+      { id: "none", name: "一般", icon: "🧾", keywords: [] },
+      { id: "renovation-2026", name: "2026 房屋裝潢", icon: "🏠", keywords: ["磁磚", "沙發", "裝潢"] },
+      { id: "travel-events", name: "旅遊與活動", icon: "✈️", keywords: ["旅遊", "活動", "機票"] },
+      { id: "investment-fund", name: "投資撥款", icon: "📈", keywords: ["投資", "撥款"] },
+      { id: "susie-only", name: "Susie 專屬", icon: "👧", keywords: ["學費", "書包", "補習"] },
+      { id: "hobby-chicken", name: "興趣養雞", icon: "🐔", keywords: ["雞舍", "飼料"] }
+    ];
 
     const form = document.getElementById("recordForm");
     const dateInput = document.getElementById("date");
     const typeInput = document.getElementById("type");
     const itemNameInput = document.getElementById("itemName");
     const categorySelect = document.getElementById("category");
+    const typeIncomeBtn = document.getElementById("typeIncomeBtn");
+    const typeExpenseBtn = document.getElementById("typeExpenseBtn");
+    const projectSelect = document.getElementById("project");
     const amountInput = document.getElementById("amount");
     const noteInput = document.getElementById("note");
     const autoClassifyHint = document.getElementById("autoClassifyHint");
+    const splitToggleBtn = document.getElementById("splitToggleBtn");
+    const splitPanel = document.getElementById("splitPanel");
+    const myShareInput = document.getElementById("myShare");
+    const susieShareInput = document.getElementById("susieShare");
+    const splitHint = document.getElementById("splitHint");
+    const projectNameInput = document.getElementById("projectNameInput");
+    const projectIconInput = document.getElementById("projectIconInput");
+    const projectKeywordsInput = document.getElementById("projectKeywordsInput");
+    const addProjectBtn = document.getElementById("addProjectBtn");
+    const projectList = document.getElementById("projectList");
+    const projectManagerPanel = document.getElementById("projectManagerPanel");
+    const projectManagerToggleBtn = document.getElementById("projectManagerToggleBtn");
 
     const balanceEl = document.getElementById("balance");
     const totalIncomeEl = document.getElementById("totalIncome");
@@ -788,6 +1078,9 @@
     const pieTitle = document.getElementById("pieTitle");
     const pieMonthBtn = document.getElementById("pieMonthBtn");
     const pieYearBtn = document.getElementById("pieYearBtn");
+    const monthAvailableValueEl = document.getElementById("monthAvailableValue");
+    const salaryIncomeValue = document.getElementById("salaryIncomeValue");
+    const supportIncomeValue = document.getElementById("supportIncomeValue");
 
     const robotBtn = document.getElementById("robotBtn");
     const robotPanel = document.getElementById("robotPanel");
@@ -808,10 +1101,14 @@
 
     let records = [];
     let categories = [];
+    let projects = [];
     let calcExpression = "0";
     let drawing = false;
     let lastPoint = { x: 0, y: 0 };
     let pieScope = "month";
+    let splitEnabled = false;
+    let editingProjectId = null;
+    let draggingProjectId = null;
 
     function setTodayDate() {
       const today = new Date();
@@ -848,14 +1145,215 @@
     }
 
     function renderCategoryOptions() {
+      const selected = categorySelect.value;
       categorySelect.innerHTML = "";
-      categories.forEach((category, index) => {
+      const source = typeInput.value === "income" ? INCOME_CATEGORIES : categories.map((category) => category.name);
+      source.forEach((categoryName, index) => {
         const option = document.createElement("option");
-        option.value = category.name;
-        option.textContent = category.name;
+        option.value = categoryName;
+        option.textContent = categoryName;
         categorySelect.appendChild(option);
-        if (index === 0) categorySelect.value = category.name;
+        if (index === 0) categorySelect.value = categoryName;
       });
+      if (selected && source.includes(selected)) {
+        categorySelect.value = selected;
+      } else if (source.length) {
+        categorySelect.value = source[0];
+      }
+    }
+
+    function setType(nextType) {
+      typeInput.value = nextType === "expense" ? "expense" : "income";
+      const isIncome = typeInput.value === "income";
+      typeIncomeBtn.classList.toggle("active", isIncome);
+      typeExpenseBtn.classList.toggle("active", !isIncome);
+
+      // 拆分僅在支出模式開放，避免收入場景誤用
+      splitToggleBtn.disabled = isIncome;
+      if (isIncome) {
+        setSplitEnabled(false);
+      }
+      renderCategoryOptions();
+    }
+
+    function setProjectManagerOpen(open) {
+      if (!projectManagerPanel || !projectManagerToggleBtn) return;
+      projectManagerPanel.hidden = !open;
+      projectManagerPanel.style.display = open ? "grid" : "none";
+      projectManagerToggleBtn.textContent = open ? "收起專案管理" : "展開專案管理";
+      projectManagerToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    function renderIncomeAnalysis(scope, currentMonth, currentYear) {
+      const periodIncomes = records.filter((record) => {
+        if (record.type !== "income") return false;
+        const dateText = String(record.date || "");
+        if (scope === "month") return dateText.startsWith(currentMonth);
+        if (scope === "year") return dateText.startsWith(`${currentYear}-`);
+        return true;
+      });
+
+      const supportIncome = periodIncomes
+        .filter((record) => String(record.category || "") === SUPPORT_INCOME_CATEGORY)
+        .reduce((sum, record) => sum + Number(record.amount || 0), 0);
+
+      const salaryIncome = periodIncomes
+        .filter((record) => String(record.category || "") === "固定薪資")
+        .reduce((sum, record) => sum + Number(record.amount || 0), 0);
+
+      salaryIncomeValue.textContent = currency.format(salaryIncome);
+      supportIncomeValue.textContent = currency.format(supportIncome);
+    }
+
+    function renderProjectOptions() {
+      const selectedProjectId = projectSelect.value;
+      projectSelect.innerHTML = "";
+      projects.forEach((project, index) => {
+        const option = document.createElement("option");
+        option.value = project.id;
+        option.textContent = `${project.icon} ${project.name}`;
+        projectSelect.appendChild(option);
+        if (index === 0) projectSelect.value = project.id;
+      });
+
+      if (selectedProjectId && projects.some((project) => project.id === selectedProjectId)) {
+        projectSelect.value = selectedProjectId;
+      }
+    }
+
+    function getProjectMeta(projectId) {
+      return projects.find((project) => project.id === projectId) || null;
+    }
+
+    function normalizeProjects(input) {
+      const seed = Array.isArray(input) && input.length ? input : DEFAULT_PROJECTS;
+      const cleaned = seed
+        .map((project) => {
+          if (!project || typeof project.name !== "string") return null;
+          const id = String(project.id || "").trim() || `p-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+          const name = project.name.trim();
+          if (!name) return null;
+          const icon = String(project.icon || "🧾").trim() || "🧾";
+          const keywords = Array.isArray(project.keywords)
+            ? project.keywords.map((word) => String(word || "").trim()).filter(Boolean)
+            : [];
+          return { id, name, icon, keywords };
+        })
+        .filter(Boolean);
+
+      const none = cleaned.find((project) => project.id === "none");
+      const rest = cleaned.filter((project) => project.id !== "none");
+      return [none || { id: "none", name: "一般", icon: "🧾", keywords: [] }, ...rest];
+    }
+
+    function ensureProjectOrder() {
+      const none = projects.find((project) => project.id === "none") || { id: "none", name: "一般", icon: "🧾", keywords: [] };
+      const rest = projects.filter((project) => project.id !== "none");
+      projects = [none, ...rest];
+    }
+
+    function loadProjects() {
+      try {
+        const raw = localStorage.getItem(PROJECT_STORAGE_KEY);
+        projects = normalizeProjects(raw ? JSON.parse(raw) : null);
+      } catch {
+        projects = normalizeProjects(null);
+      }
+      saveProjects();
+    }
+
+    function saveProjects() {
+      ensureProjectOrder();
+      localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
+    }
+
+    function parseKeywords(raw) {
+      return String(raw || "")
+        .split(",")
+        .map((text) => text.trim())
+        .filter(Boolean);
+    }
+
+    function renderProjectManager() {
+      projectList.innerHTML = "";
+      projects.forEach((project) => {
+        const row = document.createElement("div");
+        row.className = "project-item";
+        row.dataset.id = project.id;
+        row.draggable = project.id !== "none" && editingProjectId === null;
+        const keywordsText = project.keywords.length ? project.keywords.join("、") : "（無關鍵字）";
+
+        if (editingProjectId === project.id) {
+          row.innerHTML = `
+            <div class="project-inline-grid">
+              <input data-field="name" type="text" value="${escapeHtml(project.name)}" />
+              <input data-field="icon" type="text" value="${escapeHtml(project.icon)}" />
+              <input data-field="keywords" type="text" value="${escapeHtml(project.keywords.join(","))}" />
+            </div>
+            <div class="project-item-actions">
+              <button type="button" class="tiny-btn" data-action="save" data-id="${project.id}">儲存</button>
+              <button type="button" class="tiny-btn" data-action="cancel" data-id="${project.id}">取消</button>
+              <button type="button" class="tiny-btn" data-action="delete" data-id="${project.id}" ${project.id === "none" ? "disabled" : ""}>刪除</button>
+            </div>
+          `;
+        } else {
+          row.innerHTML = `
+            <div class="project-view"><span class="drag-handle">⋮⋮</span>${escapeHtml(project.icon)} ${escapeHtml(project.name)} ｜ ${escapeHtml(keywordsText)}</div>
+            <div class="project-item-actions">
+              <button type="button" class="tiny-btn" data-action="edit" data-id="${project.id}">修改</button>
+              <button type="button" class="tiny-btn" data-action="delete" data-id="${project.id}" ${project.id === "none" ? "disabled" : ""}>刪除</button>
+            </div>
+          `;
+        }
+
+        projectList.appendChild(row);
+      });
+    }
+
+    function detectProjectFromText(text) {
+      const safe = String(text || "").trim();
+      if (!safe) return null;
+      for (const project of projects) {
+        for (const keyword of project.keywords) {
+          if (keyword && safe.includes(keyword)) {
+            return project.id;
+          }
+        }
+      }
+      return null;
+    }
+
+    function migrateRecords(rawRecords) {
+      if (!Array.isArray(rawRecords)) return [];
+      const byProjectId = new Map(projects.map((project) => [project.id, project]));
+      const byProjectName = new Map(projects.map((project) => [project.name.trim().toLowerCase(), project.id]));
+
+      return rawRecords
+        .filter((record) => record && typeof record === "object")
+        .map((record) => {
+          const next = { ...record };
+          let projectId = String(next.projectId || "").trim();
+
+          if (!projectId) {
+            const legacyName = String(next.projectName || next.project || "").trim().toLowerCase();
+            if (legacyName && byProjectName.has(legacyName)) {
+              projectId = byProjectName.get(legacyName);
+            }
+          }
+
+          if (!projectId) {
+            projectId = detectProjectFromText(next.itemName || next.note || "") || "none";
+          }
+
+          if (!byProjectId.has(projectId)) {
+            projectId = "none";
+          }
+
+          next.projectId = projectId;
+          next.myShare = Number.isFinite(Number(next.myShare)) ? Number(next.myShare) : null;
+          next.susieShare = Number.isFinite(Number(next.susieShare)) ? Number(next.susieShare) : null;
+          return next;
+        });
     }
 
     function saveRecords() {
@@ -865,10 +1363,12 @@
     function loadRecords() {
       try {
         const raw = localStorage.getItem(RECORD_STORAGE_KEY);
-        records = raw ? JSON.parse(raw) : [];
+        const parsed = raw ? JSON.parse(raw) : [];
+        records = migrateRecords(parsed);
       } catch {
         records = [];
       }
+      saveRecords();
     }
 
     function updateSummary() {
@@ -880,16 +1380,22 @@
       const monthIncome = records
         .filter((r) => r.type === "income" && String(r.date || "").startsWith(currentMonth))
         .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const monthExpense = records
+        .filter((r) => r.type === "expense" && String(r.date || "").startsWith(currentMonth))
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const yearIncome = records
         .filter((r) => r.type === "income" && String(r.date || "").startsWith(`${currentYear}-`))
         .reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const balance = income - expense;
+      const monthAvailable = monthIncome - monthExpense;
       balanceEl.textContent = currency.format(balance);
       totalIncomeEl.textContent = currency.format(income);
       totalExpenseEl.textContent = currency.format(expense);
       monthIncomeEl.textContent = currency.format(monthIncome);
       yearIncomeEl.textContent = currency.format(yearIncome);
+      monthAvailableValueEl.textContent = currency.format(monthAvailable);
       drawExpensePie(pieScope);
+      renderIncomeAnalysis(pieScope, currentMonth, currentYear);
     }
 
     function createRecordRow(record) {
@@ -899,6 +1405,24 @@
       const typeTagClass = record.type === "income" ? "tag-income" : "tag-expense";
       const itemName = (record.itemName || "").trim() || (record.category || "").trim() || "未命名";
       const categoryName = (record.category || "").trim() || "未分類";
+      const project = getProjectMeta(record.projectId);
+      const splitApplied = Number.isFinite(Number(record.myShare)) && Number.isFinite(Number(record.susieShare));
+      const susieAmount = Number(record.susieShare);
+      const hasSusieExpense = splitApplied && Number.isFinite(susieAmount) && susieAmount > 0;
+
+      if (project && project.id !== "none") {
+        tr.classList.add("project-row");
+      }
+
+      const splitText = hasSusieExpense
+        ? `｜拆分：我 ${currency.format(Number(record.myShare))}、Susie ${currency.format(Number(record.susieShare))}`
+        : "";
+      const projectTag = project && project.id !== "none"
+        ? `<span class="tag tag-project">${project.icon} ${escapeHtml(project.name)}</span>`
+        : "";
+      const supportTag = record.type === "income" && String(record.category || "") === SUPPORT_INCOME_CATEGORY
+        ? `<span class="tag tag-support">🧡 補償性支援</span>`
+        : "";
 
       tr.innerHTML = `
         <td>${escapeHtml(record.date || "-")}</td>
@@ -907,9 +1431,11 @@
           <span class="item-wrap">
             <span>${escapeHtml(itemName)}</span>
             <span class="tag tag-category">${escapeHtml(categoryName)}</span>
+            ${projectTag}
+            ${supportTag}
           </span>
         </td>
-        <td>${record.note ? escapeHtml(record.note) : "-"}</td>
+        <td>${record.note ? escapeHtml(record.note) : "-"}${splitText}</td>
         <td class="${amountClass}">${currency.format(Number(record.amount || 0))}</td>
         <td><button class="btn-delete" data-id="${record.id}">刪除</button></td>
       `;
@@ -958,14 +1484,95 @@
       return null;
     }
 
+    function detectProject(itemName) {
+      const text = itemName.trim();
+      if (!text) return null;
+      for (const project of projects) {
+        for (const keyword of project.keywords) {
+          if (keyword && text.includes(keyword)) {
+            return { projectId: project.id, projectName: project.name, icon: project.icon, keyword };
+          }
+        }
+      }
+      return null;
+    }
+
     function runAutoClassify() {
-      const result = detectCategory(itemNameInput.value);
-      if (!result) {
+      const categoryResult = typeInput.value === "expense" ? detectCategory(itemNameInput.value) : null;
+      const projectResult = detectProject(itemNameInput.value);
+      const hints = [];
+
+      if (categoryResult) {
+        categorySelect.value = categoryResult.categoryName;
+        hints.push(`分類→「${categoryResult.categoryName}」（${categoryResult.keyword}）`);
+      }
+
+      if (projectResult) {
+        projectSelect.value = projectResult.projectId;
+        hints.push(`專案→「${projectResult.icon} ${projectResult.projectName}」（${projectResult.keyword}）`);
+      }
+
+      if (hints.length === 0) {
         autoClassifyHint.textContent = "";
         return;
       }
-      categorySelect.value = result.categoryName;
-      autoClassifyHint.textContent = `已依關鍵字「${result.keyword}」自動分類為「${result.categoryName}」`;
+
+      autoClassifyHint.textContent = `自動判斷：${hints.join("，")}`;
+    }
+
+    function setSplitEnabled(enabled) {
+      splitEnabled = enabled;
+      splitPanel.hidden = !enabled;
+      splitToggleBtn.classList.toggle("active", enabled);
+      splitToggleBtn.textContent = enabled ? "取消拆分" : "拆分";
+
+      if (enabled) {
+        const total = Number(amountInput.value) || 0;
+        myShareInput.value = total > 0 ? String(total) : "0";
+        susieShareInput.value = "";
+      } else {
+        myShareInput.value = "";
+        susieShareInput.value = "";
+      }
+      refreshSplitHint();
+    }
+
+    function getSplitValues() {
+      const total = Number(amountInput.value);
+      const susieRaw = susieShareInput.value.trim();
+      const susieShare = susieRaw === "" ? 0 : Number(susieRaw);
+      const myShare = Number.isFinite(total) && Number.isFinite(susieShare) ? total - susieShare : NaN;
+      return { total, myShare, susieShare };
+    }
+
+    function refreshSplitHint() {
+      if (!splitEnabled) {
+        splitHint.textContent = "";
+        return;
+      }
+      const { total, myShare, susieShare } = getSplitValues();
+
+      if (!Number.isFinite(total) || total <= 0) {
+        myShareInput.value = "";
+        splitHint.textContent = "請先輸入總金額。";
+        return;
+      }
+      if (!Number.isFinite(susieShare) || susieShare < 0) {
+        myShareInput.value = "";
+        splitHint.textContent = "請輸入有效的 Susie 金額。";
+        return;
+      }
+      if (!Number.isFinite(myShare) || myShare < 0) {
+        myShareInput.value = "";
+        splitHint.textContent = "Susie 金額不可大於總金額。";
+        return;
+      }
+
+      myShareInput.value = String(Math.round(myShare));
+      const diff = Math.abs((myShare + susieShare) - total);
+      splitHint.textContent = diff < 0.5
+        ? `拆分正確：${currency.format(total)} = ${currency.format(myShare)} + ${currency.format(susieShare)}`
+        : `目前不相符：差額 ${currency.format(diff)}`;
     }
 
     function drawExpensePie(scope) {
@@ -1027,6 +1634,10 @@
       pieMonthBtn.classList.toggle("active", scope === "month");
       pieYearBtn.classList.toggle("active", scope === "year");
       drawExpensePie(pieScope);
+      const now = new Date();
+      const currentYear = String(now.getFullYear());
+      const currentMonth = `${currentYear}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      renderIncomeAnalysis(pieScope, currentMonth, currentYear);
     }
 
     function switchTool(toolName) {
@@ -1102,13 +1713,32 @@
         type: typeInput.value,
         itemName: itemNameInput.value.trim(),
         category: categorySelect.value,
+        projectId: projectSelect.value,
         amount,
-        note: noteInput.value.trim()
+        note: noteInput.value.trim(),
+        myShare: null,
+        susieShare: null
       };
       if (!record.date || !record.itemName || !record.category) {
         alert("請完整填寫日期、項目名稱與分類。");
         return;
       }
+
+      if (splitEnabled) {
+        const { myShare, susieShare } = getSplitValues();
+        const diff = Math.abs((myShare + susieShare) - amount);
+        if (!Number.isFinite(myShare) || !Number.isFinite(susieShare) || myShare < 0 || susieShare < 0 || diff >= 0.5) {
+          alert("請確認 Susie 金額有效，且不可大於總金額。");
+          return;
+        }
+        if (susieShare > 0 && !record.note) {
+          alert("當 Susie 有分帳金額時，請填寫備註。");
+          return;
+        }
+        record.myShare = myShare;
+        record.susieShare = susieShare;
+      }
+
       records.push(record);
       saveRecords();
       renderRecords();
@@ -1116,19 +1746,179 @@
       amountInput.value = "";
       noteInput.value = "";
       autoClassifyHint.textContent = "";
+      setSplitEnabled(false);
       itemNameInput.focus();
     });
 
     form.addEventListener("reset", () => {
       setTimeout(() => {
         autoClassifyHint.textContent = "";
-        categorySelect.value = categories[0]?.name || "";
+        renderCategoryOptions();
+        projectSelect.value = "none";
+        setSplitEnabled(false);
       }, 0);
     });
 
     itemNameInput.addEventListener("input", runAutoClassify);
+    projectManagerToggleBtn.addEventListener("click", () => {
+      setProjectManagerOpen(projectManagerPanel.hidden);
+    });
+    typeIncomeBtn.addEventListener("click", () => setType("income"));
+    typeExpenseBtn.addEventListener("click", () => setType("expense"));
+    amountInput.addEventListener("input", refreshSplitHint);
+    susieShareInput.addEventListener("input", refreshSplitHint);
+    splitToggleBtn.addEventListener("click", () => setSplitEnabled(!splitEnabled));
     pieMonthBtn.addEventListener("click", () => setPieScope("month"));
     pieYearBtn.addEventListener("click", () => setPieScope("year"));
+    addProjectBtn.addEventListener("click", () => {
+      const name = projectNameInput.value.trim();
+      const icon = projectIconInput.value.trim() || "🧾";
+      const keywords = parseKeywords(projectKeywordsInput.value);
+      if (!name) {
+        alert("請先輸入專案名稱。");
+        return;
+      }
+
+      projects.push({
+        id: `p-${Date.now()}`,
+        name,
+        icon,
+        keywords
+      });
+      saveProjects();
+      editingProjectId = null;
+      renderProjectOptions();
+      renderProjectManager();
+      projectNameInput.value = "";
+      projectIconInput.value = "";
+      projectKeywordsInput.value = "";
+    });
+
+    projectList.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const button = target.closest("button");
+      if (!(button instanceof HTMLButtonElement)) return;
+      const action = button.dataset.action;
+      const id = button.dataset.id;
+      if (!action || !id) return;
+
+      const project = projects.find((item) => item.id === id);
+      if (!project) return;
+
+      if (action === "edit") {
+        if (project.id === "none") return;
+        editingProjectId = id;
+        renderProjectManager();
+        return;
+      }
+
+      if (action === "cancel") {
+        editingProjectId = null;
+        renderProjectManager();
+        return;
+      }
+
+      if (action === "save") {
+        const row = button.closest(".project-item");
+        if (!row) return;
+
+        const nameInput = row.querySelector('input[data-field="name"]');
+        const iconInput = row.querySelector('input[data-field="icon"]');
+        const keywordsInput = row.querySelector('input[data-field="keywords"]');
+        if (!(nameInput instanceof HTMLInputElement) || !(iconInput instanceof HTMLInputElement) || !(keywordsInput instanceof HTMLInputElement)) {
+          return;
+        }
+
+        const safeName = nameInput.value.trim();
+        if (!safeName) {
+          alert("專案名稱不可為空。");
+          return;
+        }
+
+        project.name = safeName;
+        project.icon = iconInput.value.trim() || "🧾";
+        project.keywords = parseKeywords(keywordsInput.value);
+        saveProjects();
+        editingProjectId = null;
+        renderProjectOptions();
+        renderProjectManager();
+        return;
+      }
+
+      if (action === "delete") {
+        if (id === "none") return;
+        projects = projects.filter((item) => item.id !== id);
+        records = records.map((record) => (
+          record.projectId === id ? { ...record, projectId: "none" } : record
+        ));
+        saveProjects();
+        saveRecords();
+        editingProjectId = null;
+        renderProjectOptions();
+        renderProjectManager();
+        renderRecords();
+      }
+    });
+
+    projectList.addEventListener("dragstart", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const row = target.closest(".project-item");
+      if (!row) return;
+      const id = row.dataset.id;
+      if (!id || id === "none") return;
+
+      draggingProjectId = id;
+      row.classList.add("dragging");
+    });
+
+    projectList.addEventListener("dragend", () => {
+      draggingProjectId = null;
+      projectList.querySelectorAll(".project-item").forEach((row) => {
+        row.classList.remove("dragging");
+        row.classList.remove("drag-over");
+      });
+    });
+
+    projectList.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const row = target.closest(".project-item");
+      if (!row) return;
+
+      projectList.querySelectorAll(".project-item").forEach((item) => item.classList.remove("drag-over"));
+      row.classList.add("drag-over");
+    });
+
+    projectList.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const row = target.closest(".project-item");
+      if (!row || !draggingProjectId) return;
+
+      const targetId = row.dataset.id;
+      if (!targetId || targetId === draggingProjectId) return;
+
+      const fromIndex = projects.findIndex((project) => project.id === draggingProjectId);
+      let toIndex = projects.findIndex((project) => project.id === targetId);
+      if (fromIndex < 0 || toIndex < 0) return;
+      if (fromIndex === 0) return;
+
+      const [moved] = projects.splice(fromIndex, 1);
+      if (targetId === "none") {
+        toIndex = 1;
+      } else if (fromIndex < toIndex) {
+        toIndex -= 1;
+      }
+
+      projects.splice(Math.max(1, toIndex), 0, moved);
+      saveProjects();
+      renderProjectOptions();
+      renderProjectManager();
+    });
 
     recordBody.addEventListener("click", (event) => {
       const target = event.target;
@@ -1191,7 +1981,11 @@
 
     setTodayDate();
     loadCategories();
-    renderCategoryOptions();
+    loadProjects();
+    setType("income");
+    setProjectManagerOpen(false);
+    renderProjectOptions();
+    renderProjectManager();
     loadRecords();
     setPieScope("month");
     renderRecords();
