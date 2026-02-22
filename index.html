@@ -1723,6 +1723,7 @@
     const CATEGORY_STORAGE_KEY = "money-app-categories-v1";
     const PROJECT_STORAGE_KEY = "money-app-projects-v1";
     const ACCOUNT_STORAGE_KEY = "money-app-accounts-v1";
+    const LAST_LOCAL_DATA_UPDATE_KEY = "money-app-last-local-data-update-at";
     const SUPABASE_URL_KEY = "money-app-supabase-url";
     const SUPABASE_ANON_KEY = "money-app-supabase-anon-key";
     const SUPABASE_DEFAULT_URL = "https://wbirxxapsemulrsjjqao.supabase.co";
@@ -1834,6 +1835,10 @@
     let editingProjectId = null;
     let draggingProjectId = null;
     let toastTimer = null;
+
+    function markLocalDataUpdated() {
+      localStorage.setItem(LAST_LOCAL_DATA_UPDATE_KEY, new Date().toISOString());
+    }
 
     function setTodayDate() {
       const today = new Date();
@@ -2028,16 +2033,22 @@
     }
 
     function loadAccounts() {
+      let shouldPersist = false;
       try {
         const raw = localStorage.getItem(ACCOUNT_STORAGE_KEY);
         accounts = normalizeAccounts(raw ? JSON.parse(raw) : null);
+        if (!raw) shouldPersist = true;
       } catch {
         accounts = normalizeAccounts(null);
+        shouldPersist = true;
       }
-      saveAccounts();
+      if (shouldPersist) {
+        localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(accounts));
+      }
     }
 
     function saveAccounts() {
+      markLocalDataUpdated();
       localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(accounts));
       saveToCloud();
     }
@@ -2128,6 +2139,7 @@
     }
 
     function saveProjects() {
+      markLocalDataUpdated();
       ensureProjectOrder();
       localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
       saveToCloud();
@@ -2173,15 +2185,25 @@
       if (!navigator.onLine || !isSupabaseConfigured()) return;
       try {
         const { url } = getSupabaseConfig();
-        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
+        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN},${SYNC_UPDATED_AT_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
         const response = await fetch(endpoint, {
           method: "GET",
           headers: getSupabaseHeaders()
         });
         if (!response.ok) return;
         const rows = await response.json();
-        const payload = Array.isArray(rows) && rows[0] && rows[0][SYNC_PAYLOAD_COLUMN] ? rows[0][SYNC_PAYLOAD_COLUMN] : null;
+        const cloudRow = Array.isArray(rows) && rows[0] ? rows[0] : null;
+        const payload = cloudRow && cloudRow[SYNC_PAYLOAD_COLUMN] ? cloudRow[SYNC_PAYLOAD_COLUMN] : null;
+        const cloudUpdatedAt = cloudRow && cloudRow[SYNC_UPDATED_AT_COLUMN] ? String(cloudRow[SYNC_UPDATED_AT_COLUMN]) : "";
+        const localUpdatedAt = String(localStorage.getItem(LAST_LOCAL_DATA_UPDATE_KEY) || "");
         if (!payload) return;
+        if (cloudUpdatedAt && localUpdatedAt) {
+          const cloudTime = Date.parse(cloudUpdatedAt);
+          const localTime = Date.parse(localUpdatedAt);
+          if (Number.isFinite(cloudTime) && Number.isFinite(localTime) && localTime > cloudTime) {
+            return;
+          }
+        }
         const cloudRecords = Array.isArray(payload.records) ? payload.records : [];
         const cloudCategories = payload.categories != null ? payload.categories : null;
         const cloudProjects = payload.projects != null ? payload.projects : null;
@@ -2203,10 +2225,6 @@
           localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(cloudRecords));
           records = migrateRecords(cloudRecords);
         }
-        saveRecords();
-        saveCategories();
-        saveProjects();
-        saveAccounts();
       } catch (_) {}
     }
 
@@ -2331,6 +2349,7 @@
     }
 
     function saveRecords() {
+      markLocalDataUpdated();
       localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(records));
       saveToCloud();
     }
@@ -2343,7 +2362,6 @@
       } catch {
         records = [];
       }
-      saveRecords();
     }
 
     function updateSummary() {
@@ -3127,8 +3145,8 @@
 
     // 從其他頁返回（例如資產設定頁）時，確保用最新本機資料重繪。
     function refreshFromLocalStorage() {
-      loadRecords();
       loadAccounts();
+      loadRecords();
       renderAccountOptions();
       renderRecords();
       renderAssetSummary();

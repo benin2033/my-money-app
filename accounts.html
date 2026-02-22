@@ -154,6 +154,7 @@
   <script>
     const ACCOUNT_STORAGE_KEY = "money-app-accounts-v1";
     const RECORD_STORAGE_KEY = "money-app-records-v1";
+    const LAST_LOCAL_DATA_UPDATE_KEY = "money-app-last-local-data-update-at";
     const RECORD_KIND_INITIAL_BALANCE = "INITIAL_BALANCE";
     const DEFAULT_ACCOUNTS = [
       { id: "acc-cash", name: "現金", assetType: "liquid", currentAmount: 0 },
@@ -204,10 +205,12 @@
     }
 
     function saveAccounts() {
+      localStorage.setItem(LAST_LOCAL_DATA_UPDATE_KEY, new Date().toISOString());
       localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(accounts));
     }
 
     function saveRecords() {
+      localStorage.setItem(LAST_LOCAL_DATA_UPDATE_KEY, new Date().toISOString());
       localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(records));
     }
 
