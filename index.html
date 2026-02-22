@@ -448,6 +448,92 @@
       gap: 10px;
     }
 
+    .asset-panel {
+      margin: 0 22px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff7ec;
+      padding: 10px 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .asset-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .asset-title {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--subtle);
+      font-weight: 700;
+    }
+
+    .asset-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #5e4a3e;
+    }
+
+    .asset-weighted {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--subtle);
+    }
+
+    .asset-scope {
+      display: inline-flex;
+      gap: 6px;
+    }
+
+    .asset-scope button.active {
+      background: var(--accent);
+      color: #fff8f0;
+      border-color: var(--accent);
+    }
+
+    .account-manager {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.55);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .account-form-grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1.2fr 0.9fr 0.7fr 1fr auto;
+    }
+
+    .account-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .account-item {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fffaf4;
+      padding: 8px 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+
+    .account-meta {
+      color: var(--subtle);
+      font-size: 0.78rem;
+      margin-top: 3px;
+    }
+
     .project-manager-toggle {
       justify-self: start;
     }
@@ -916,6 +1002,10 @@
         grid-template-columns: repeat(2, 1fr);
       }
 
+      .account-form-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
       .col-2,
       .col-3,
       .actions {
@@ -959,7 +1049,8 @@
 
       .summary-grid,
       .form,
-      .list-wrap {
+      .list-wrap,
+      .asset-panel {
         padding-left: 12px;
         padding-right: 12px;
       }
@@ -1153,7 +1244,8 @@
       .summary-grid,
       .form,
       .list-wrap,
-      .sync-config-panel {
+      .sync-config-panel,
+      .asset-panel {
         padding-left: 8px;
         padding-right: 8px;
       }
@@ -1313,6 +1405,10 @@
         display: block;
         text-align: center;
         padding: 10px 4px;
+      }
+
+      .account-form-grid {
+        grid-template-columns: 1fr;
       }
 
       .actions {
@@ -1477,6 +1573,32 @@
         </div>
       </div>
 
+      <div class="asset-panel">
+        <div class="asset-head">
+          <p id="assetReportTitle" class="asset-title">資產總覽（流動資產）</p>
+          <span id="assetReportValue" class="asset-value">$0</span>
+        </div>
+        <p id="assetWeightedValue" class="asset-weighted">權重後資產：$0</p>
+        <div class="asset-scope">
+          <button id="assetScopeLiquidBtn" type="button" class="scope-btn active">流動資產</button>
+          <button id="assetScopeAllBtn" type="button" class="scope-btn">全部資產</button>
+        </div>
+        <div class="account-manager">
+          <p class="project-manager-title">帳戶設定（開帳 / 資產管理）</p>
+          <div class="account-form-grid">
+            <input id="accountNameInput" type="text" placeholder="帳戶名稱（如：現金）" />
+            <select id="accountTypeSelect">
+              <option value="liquid">流動資產</option>
+              <option value="long_term">長期資產</option>
+            </select>
+            <input id="accountWeightInput" type="number" min="0" step="0.1" placeholder="權重" value="1" />
+            <input id="accountBalanceInput" type="number" min="0" step="1" placeholder="期初餘額 / 當前金額" />
+            <button type="button" id="saveInitialBalanceBtn" class="btn-inline">設定期初餘額</button>
+          </div>
+          <div id="accountList" class="account-list"></div>
+        </div>
+      </div>
+
       <div class="summary-grid">
         <div class="summary">
           <div class="stat">
@@ -1548,6 +1670,11 @@
         <div class="field col-2">
           <label for="project">專案</label>
           <select id="project" name="project"></select>
+        </div>
+
+        <div class="field col-2">
+          <label for="recordAccount">帳戶</label>
+          <select id="recordAccount" name="recordAccount" required></select>
         </div>
 
         <div class="field col-2">
@@ -1676,6 +1803,7 @@
     const RECORD_STORAGE_KEY = "money-app-records-v1";
     const CATEGORY_STORAGE_KEY = "money-app-categories-v1";
     const PROJECT_STORAGE_KEY = "money-app-projects-v1";
+    const ACCOUNT_STORAGE_KEY = "money-app-accounts-v1";
     const SUPABASE_URL_KEY = "money-app-supabase-url";
     const SUPABASE_ANON_KEY = "money-app-supabase-anon-key";
     const SUPABASE_DEFAULT_URL = "https://wbirxxapsemulrsjjqao.supabase.co";
@@ -1686,6 +1814,7 @@
     const SYNC_PAYLOAD_COLUMN = "sync_payload";
     const SYNC_UPDATED_AT_COLUMN = "sync_updated_at";
     const SUPPORT_INCOME_CATEGORY = "外部支援 (老公)";
+    const RECORD_KIND_INITIAL_BALANCE = "INITIAL_BALANCE";
     const INCOME_CATEGORIES = ["固定薪資", SUPPORT_INCOME_CATEGORY, "其他收入"];
     const DEFAULT_CATEGORIES = [
       { name: "食", keywords: ["午餐", "早餐", "晚餐", "火鍋", "飲料", "咖啡", "便當"] },
@@ -1702,6 +1831,11 @@
       { id: "investment-fund", name: "投資撥款", icon: "📈", keywords: ["投資", "撥款"] },
       { id: "susie-only", name: "Susie 專屬", icon: "👧", keywords: ["學費", "書包", "補習"] },
       { id: "hobby-chicken", name: "興趣養雞", icon: "🐔", keywords: ["雞舍", "飼料"] }
+    ];
+    const DEFAULT_ACCOUNTS = [
+      { id: "acc-cash", name: "現金", assetType: "liquid", weight: 1, currentAmount: 0 },
+      { id: "acc-bank", name: "活存", assetType: "liquid", weight: 1, currentAmount: 0 },
+      { id: "acc-fund", name: "基金", assetType: "long_term", weight: 1, currentAmount: 0 }
     ];
 
     const form = document.getElementById("recordForm");
@@ -1729,6 +1863,13 @@
     const projectList = document.getElementById("projectList");
     const projectManagerPanel = document.getElementById("projectManagerPanel");
     const projectManagerToggleBtn = document.getElementById("projectManagerToggleBtn");
+    const recordAccountSelect = document.getElementById("recordAccount");
+    const accountNameInput = document.getElementById("accountNameInput");
+    const accountTypeSelect = document.getElementById("accountTypeSelect");
+    const accountWeightInput = document.getElementById("accountWeightInput");
+    const accountBalanceInput = document.getElementById("accountBalanceInput");
+    const saveInitialBalanceBtn = document.getElementById("saveInitialBalanceBtn");
+    const accountList = document.getElementById("accountList");
 
     const balanceEl = document.getElementById("balance");
     const totalIncomeEl = document.getElementById("totalIncome");
@@ -1746,6 +1887,11 @@
     const monthAvailableValueEl = document.getElementById("monthAvailableValue");
     const salaryIncomeValue = document.getElementById("salaryIncomeValue");
     const supportIncomeValue = document.getElementById("supportIncomeValue");
+    const assetReportTitle = document.getElementById("assetReportTitle");
+    const assetReportValue = document.getElementById("assetReportValue");
+    const assetWeightedValue = document.getElementById("assetWeightedValue");
+    const assetScopeLiquidBtn = document.getElementById("assetScopeLiquidBtn");
+    const assetScopeAllBtn = document.getElementById("assetScopeAllBtn");
 
     const robotBtn = document.getElementById("robotBtn");
     const robotPanel = document.getElementById("robotPanel");
@@ -1768,11 +1914,13 @@
     let records = [];
     let categories = [];
     let projects = [];
+    let accounts = [];
     let calcExpression = "0";
     let drawing = false;
     let lastPoint = { x: 0, y: 0 };
     let pieScope = "month";
     let splitEnabled = false;
+    let assetScope = "liquid";
     let editingRecordId = null;
     let editingProjectId = null;
     let draggingProjectId = null;
@@ -1882,6 +2030,13 @@
       if (target.category && Array.from(categorySelect.options).some((option) => option.value === target.category)) {
         categorySelect.value = target.category;
       }
+      if (recordAccountSelect) {
+        if (target.accountId && Array.from(recordAccountSelect.options).some((option) => option.value === target.accountId)) {
+          recordAccountSelect.value = target.accountId;
+        } else if (recordAccountSelect.options.length > 0) {
+          recordAccountSelect.value = recordAccountSelect.options[0].value;
+        }
+      }
 
       renderProjectOptions();
       if (target.projectId && Array.from(projectSelect.options).some((option) => option.value === target.projectId)) {
@@ -1923,6 +2078,7 @@
     function renderIncomeAnalysis(scope, currentMonth, currentYear) {
       const periodIncomes = records.filter((record) => {
         if (record.type !== "income") return false;
+        if (record.recordKind === RECORD_KIND_INITIAL_BALANCE) return false;
         const dateText = String(record.date || "");
         if (scope === "month") return dateText.startsWith(currentMonth);
         if (scope === "year") return dateText.startsWith(`${currentYear}-`);
@@ -1939,6 +2095,159 @@
 
       salaryIncomeValue.textContent = currency.format(salaryIncome);
       supportIncomeValue.textContent = currency.format(supportIncome);
+    }
+
+    function normalizeAccounts(input) {
+      const seed = Array.isArray(input) && input.length ? input : DEFAULT_ACCOUNTS;
+      const normalized = seed
+        .map((account, index) => {
+          if (!account || typeof account.name !== "string") return null;
+          const name = account.name.trim();
+          if (!name) return null;
+          const id = String(account.id || `acc-${Date.now()}-${index}`).trim();
+          const assetType = account.assetType === "long_term" ? "long_term" : "liquid";
+          const weightValue = Number(account.weight);
+          const currentValue = Number(account.currentAmount);
+          return {
+            id,
+            name,
+            assetType,
+            weight: Number.isFinite(weightValue) && weightValue >= 0 ? weightValue : 1,
+            currentAmount: Number.isFinite(currentValue) && currentValue >= 0 ? currentValue : 0
+          };
+        })
+        .filter(Boolean);
+      return normalized.length ? normalized : DEFAULT_ACCOUNTS.slice();
+    }
+
+    function loadAccounts() {
+      try {
+        const raw = localStorage.getItem(ACCOUNT_STORAGE_KEY);
+        accounts = normalizeAccounts(raw ? JSON.parse(raw) : null);
+      } catch {
+        accounts = normalizeAccounts(null);
+      }
+      saveAccounts();
+    }
+
+    function saveAccounts() {
+      localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(accounts));
+      saveToCloud();
+    }
+
+    function renderAccountOptions() {
+      if (!recordAccountSelect) return;
+      const selected = recordAccountSelect.value;
+      recordAccountSelect.innerHTML = "";
+      accounts.forEach((account, index) => {
+        const option = document.createElement("option");
+        option.value = account.id;
+        option.textContent = `${account.assetType === "long_term" ? "長期" : "流動"}｜${account.name}`;
+        recordAccountSelect.appendChild(option);
+        if (index === 0) {
+          recordAccountSelect.value = account.id;
+        }
+      });
+      if (selected && accounts.some((account) => account.id === selected)) {
+        recordAccountSelect.value = selected;
+      }
+    }
+
+    function renderAccountList() {
+      if (!accountList) return;
+      accountList.innerHTML = "";
+      accounts.forEach((account) => {
+        const row = document.createElement("div");
+        row.className = "account-item";
+        row.innerHTML = `
+          <div>
+            <div>${escapeHtml(account.name)}</div>
+            <div class="account-meta">${account.assetType === "long_term" ? "長期資產" : "流動資產"} ｜ 權重 ${account.weight}</div>
+          </div>
+          <strong>${currency.format(Number(account.currentAmount || 0))}</strong>
+        `;
+        accountList.appendChild(row);
+      });
+    }
+
+    function renderAssetSummary() {
+      const filtered = accounts.filter((account) => assetScope === "all" || account.assetType === "liquid");
+      const total = filtered.reduce((sum, account) => sum + Number(account.currentAmount || 0), 0);
+      const weighted = filtered.reduce((sum, account) => sum + Number(account.currentAmount || 0) * Number(account.weight || 0), 0);
+      if (assetReportTitle) {
+        assetReportTitle.textContent = assetScope === "all" ? "資產總覽（全部資產）" : "資產總覽（流動資產）";
+      }
+      if (assetReportValue) {
+        assetReportValue.textContent = currency.format(total);
+      }
+      if (assetWeightedValue) {
+        assetWeightedValue.textContent = `權重後資產：${currency.format(weighted)}`;
+      }
+      if (assetScopeLiquidBtn && assetScopeAllBtn) {
+        assetScopeLiquidBtn.classList.toggle("active", assetScope === "liquid");
+        assetScopeAllBtn.classList.toggle("active", assetScope === "all");
+      }
+    }
+
+    function upsertAccountWithInitialBalance() {
+      const name = String(accountNameInput ? accountNameInput.value : "").trim();
+      const amount = Number(accountBalanceInput ? accountBalanceInput.value : "");
+      const rawWeight = Number(accountWeightInput ? accountWeightInput.value : "1");
+      const assetType = accountTypeSelect && accountTypeSelect.value === "long_term" ? "long_term" : "liquid";
+
+      if (!name) {
+        alert("請輸入帳戶名稱。");
+        return;
+      }
+      if (!Number.isFinite(amount) || amount < 0) {
+        alert("請輸入有效的期初餘額。");
+        return;
+      }
+      if (!Number.isFinite(rawWeight) || rawWeight < 0) {
+        alert("權重不可小於 0。");
+        return;
+      }
+
+      const existing = accounts.find((account) => account.name === name);
+      const accountId = existing ? existing.id : `acc-${Date.now()}`;
+      const normalized = {
+        id: accountId,
+        name,
+        assetType,
+        weight: rawWeight,
+        currentAmount: amount
+      };
+
+      if (existing) {
+        accounts = accounts.map((account) => (account.id === accountId ? normalized : account));
+      } else {
+        accounts.push(normalized);
+      }
+      saveAccounts();
+      renderAccountOptions();
+      renderAccountList();
+      renderAssetSummary();
+
+      records = records.filter((record) => !(record.recordKind === RECORD_KIND_INITIAL_BALANCE && record.accountId === accountId));
+      records.push({
+        id: crypto.randomUUID(),
+        date: dateInput.value || new Date().toISOString().slice(0, 10),
+        type: "income",
+        itemName: `${name} 期初餘額`,
+        category: "期初餘額",
+        projectId: "none",
+        accountId,
+        amount,
+        note: "開帳",
+        myShare: null,
+        susieShare: null,
+        recordKind: RECORD_KIND_INITIAL_BALANCE
+      });
+      saveRecords();
+      renderRecords();
+      showToast("已設定期初餘額（不計入本月收入）");
+
+      if (accountBalanceInput) accountBalanceInput.value = "";
     }
 
     function renderProjectOptions() {
@@ -2056,6 +2365,7 @@
         const cloudRecords = Array.isArray(payload.records) ? payload.records : [];
         const cloudCategories = payload.categories != null ? payload.categories : null;
         const cloudProjects = payload.projects != null ? payload.projects : null;
+        const cloudAccounts = payload.accounts != null ? payload.accounts : null;
 
         if (cloudCategories != null) {
           localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(cloudCategories));
@@ -2065,6 +2375,10 @@
           localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(cloudProjects));
           projects = normalizeProjects(cloudProjects);
         }
+        if (cloudAccounts != null) {
+          localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(cloudAccounts));
+          accounts = normalizeAccounts(cloudAccounts);
+        }
         if (cloudRecords.length >= 0) {
           localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(cloudRecords));
           records = migrateRecords(cloudRecords);
@@ -2072,6 +2386,7 @@
         saveRecords();
         saveCategories();
         saveProjects();
+        saveAccounts();
       } catch (_) {}
     }
 
@@ -2082,7 +2397,8 @@
         const payload = {
           records: records,
           categories: categories,
-          projects: projects
+          projects: projects,
+          accounts: accounts
         };
         const endpoint = `${url}/rest/v1/${SYNC_TABLE}?on_conflict=${SYNC_KEY_COLUMN}`;
         await fetch(endpoint, {
@@ -2162,6 +2478,7 @@
       if (!Array.isArray(rawRecords)) return [];
       const byProjectId = new Map(projects.map((project) => [project.id, project]));
       const byProjectName = new Map(projects.map((project) => [project.name.trim().toLowerCase(), project.id]));
+      const defaultAccountId = accounts[0] ? accounts[0].id : "";
 
       return rawRecords
         .filter((record) => record && typeof record === "object")
@@ -2187,6 +2504,8 @@
           next.projectId = projectId;
           next.myShare = Number.isFinite(Number(next.myShare)) ? Number(next.myShare) : null;
           next.susieShare = Number.isFinite(Number(next.susieShare)) ? Number(next.susieShare) : null;
+          next.accountId = String(next.accountId || defaultAccountId);
+          next.recordKind = String(next.recordKind || "");
           return next;
         });
     }
@@ -2211,16 +2530,18 @@
       const now = new Date();
       const currentYear = String(now.getFullYear());
       const currentMonth = `${currentYear}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      const income = records.filter((r) => r.type === "income").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const income = records
+        .filter((r) => r.type === "income" && r.recordKind !== RECORD_KIND_INITIAL_BALANCE)
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const expense = records.filter((r) => r.type === "expense").reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const monthIncome = records
-        .filter((r) => r.type === "income" && String(r.date || "").startsWith(currentMonth))
+        .filter((r) => r.type === "income" && r.recordKind !== RECORD_KIND_INITIAL_BALANCE && String(r.date || "").startsWith(currentMonth))
         .reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const monthExpense = records
         .filter((r) => r.type === "expense" && String(r.date || "").startsWith(currentMonth))
         .reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const yearIncome = records
-        .filter((r) => r.type === "income" && String(r.date || "").startsWith(`${currentYear}-`))
+        .filter((r) => r.type === "income" && r.recordKind !== RECORD_KIND_INITIAL_BALANCE && String(r.date || "").startsWith(`${currentYear}-`))
         .reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const balance = income - expense;
       const monthAvailable = monthIncome - monthExpense;
@@ -2232,6 +2553,7 @@
       monthAvailableValueEl.textContent = currency.format(monthAvailable);
       drawExpensePie(pieScope);
       renderIncomeAnalysis(pieScope, currentMonth, currentYear);
+      renderAssetSummary();
     }
 
     function createRecordRow(record) {
@@ -2242,6 +2564,7 @@
       const itemName = (record.itemName || "").trim() || (record.category || "").trim() || "未命名";
       const categoryName = (record.category || "").trim() || "未分類";
       const project = getProjectMeta(record.projectId);
+      const account = accounts.find((item) => item.id === record.accountId);
       const splitApplied = Number.isFinite(Number(record.myShare)) && Number.isFinite(Number(record.susieShare));
       const susieAmount = Number(record.susieShare);
       const hasSusieExpense = splitApplied && Number.isFinite(susieAmount) && susieAmount > 0;
@@ -2262,6 +2585,10 @@
       const supportTag = record.type === "income" && String(record.category || "") === SUPPORT_INCOME_CATEGORY
         ? `<span class="tag tag-support">🧡 補償性支援</span>`
         : "";
+      const initialTag = record.recordKind === RECORD_KIND_INITIAL_BALANCE
+        ? `<span class="tag">INITIAL_BALANCE</span>`
+        : "";
+      const accountTag = account ? `<span class="tag">${escapeHtml(account.name)}</span>` : "";
 
       tr.innerHTML = `
         <td class="cell-date">${escapeHtml(record.date || "-")}</td>
@@ -2270,6 +2597,8 @@
           <span class="item-wrap">
             <span>${escapeHtml(itemName)}</span>
             <span class="tag tag-category">${escapeHtml(categoryName)}</span>
+            ${initialTag}
+            ${accountTag}
             ${projectTag}
             ${supportTag}
           </span>
@@ -2544,6 +2873,7 @@
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const isEditing = Boolean(editingRecordId);
+      const editingRecord = isEditing ? records.find((item) => item.id === editingRecordId) : null;
       const amount = Number(amountInput.value);
       if (!Number.isFinite(amount) || amount <= 0) {
         alert("請輸入正確的金額。");
@@ -2557,13 +2887,19 @@
         itemName: itemNameInput.value.trim(),
         category: categorySelect.value,
         projectId: projectSelect.value,
+        accountId: recordAccountSelect ? recordAccountSelect.value : "",
         amount,
         note: noteInput.value.trim(),
         myShare: null,
-        susieShare: null
+        susieShare: null,
+        recordKind: editingRecord ? String(editingRecord.recordKind || "") : ""
       };
       if (!record.date || !record.itemName || !record.category) {
         alert("請完整填寫日期、項目名稱與分類。");
+        return;
+      }
+      if (!record.accountId) {
+        alert("請先選擇帳戶。");
         return;
       }
 
@@ -2611,6 +2947,9 @@
         autoClassifyHint.textContent = "";
         renderCategoryOptions();
         projectSelect.value = "none";
+        if (recordAccountSelect && recordAccountSelect.options.length > 0) {
+          recordAccountSelect.value = recordAccountSelect.options[0].value;
+        }
         setSplitEnabled(false);
       }, 0);
     });
@@ -2624,6 +2963,19 @@
     projectManagerToggleBtn.addEventListener("click", () => {
       setProjectManagerOpen(projectManagerPanel.hidden);
     });
+    if (assetScopeLiquidBtn && assetScopeAllBtn) {
+      assetScopeLiquidBtn.addEventListener("click", () => {
+        assetScope = "liquid";
+        renderAssetSummary();
+      });
+      assetScopeAllBtn.addEventListener("click", () => {
+        assetScope = "all";
+        renderAssetSummary();
+      });
+    }
+    if (saveInitialBalanceBtn) {
+      saveInitialBalanceBtn.addEventListener("click", upsertAccountWithInitialBalance);
+    }
     typeIncomeBtn.addEventListener("click", () => setType("income"));
     typeExpenseBtn.addEventListener("click", () => setType("expense"));
     amountInput.addEventListener("input", refreshSplitHint);
@@ -2955,10 +3307,14 @@
         loadRecords();
         loadCategories();
         loadProjects();
+        loadAccounts();
         renderRecords();
         renderCategoryOptions();
         renderProjectOptions();
         renderProjectManager();
+        renderAccountOptions();
+        renderAccountList();
+        renderAssetSummary();
       });
     });
     window.addEventListener("offline", updateSyncStatus);
@@ -2971,14 +3327,19 @@
       setTodayDate();
       loadCategories();
       loadProjects();
+      loadAccounts();
       await loadFromCloud();
       loadRecords();
       loadCategories();
       loadProjects();
+      loadAccounts();
       setType("income");
       setProjectManagerOpen(false);
       renderProjectOptions();
       renderProjectManager();
+      renderAccountOptions();
+      renderAccountList();
+      renderAssetSummary();
       setPieScope("month");
       renderRecords();
       calcScreen.value = calcExpression;
