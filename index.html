@@ -3125,6 +3125,25 @@
     });
     window.addEventListener("offline", updateSyncStatus);
 
+    // 從其他頁返回（例如資產設定頁）時，確保用最新本機資料重繪。
+    function refreshFromLocalStorage() {
+      loadRecords();
+      loadAccounts();
+      renderAccountOptions();
+      renderRecords();
+      renderAssetSummary();
+    }
+
+    window.addEventListener("pageshow", () => {
+      refreshFromLocalStorage();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        refreshFromLocalStorage();
+      }
+    });
+
     (async function init() {
       if (isStandaloneMode()) {
         document.body.classList.add("standalone");
