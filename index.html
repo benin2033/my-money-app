@@ -479,61 +479,6 @@
       color: #5e4a3e;
     }
 
-    .asset-weighted {
-      margin: 0;
-      font-size: 0.78rem;
-      color: var(--subtle);
-    }
-
-    .asset-scope {
-      display: inline-flex;
-      gap: 6px;
-    }
-
-    .asset-scope button.active {
-      background: var(--accent);
-      color: #fff8f0;
-      border-color: var(--accent);
-    }
-
-    .account-manager {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.55);
-      padding: 12px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .account-form-grid {
-      display: grid;
-      gap: 8px;
-      grid-template-columns: 1.2fr 0.9fr 0.7fr 1fr auto;
-    }
-
-    .account-list {
-      display: grid;
-      gap: 8px;
-    }
-
-    .account-item {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: #fffaf4;
-      padding: 8px 10px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.85rem;
-    }
-
-    .account-meta {
-      color: var(--subtle);
-      font-size: 0.78rem;
-      margin-top: 3px;
-    }
-
     .project-manager-toggle {
       justify-self: start;
     }
@@ -1002,10 +947,6 @@
         grid-template-columns: repeat(2, 1fr);
       }
 
-      .account-form-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-
       .col-2,
       .col-3,
       .actions {
@@ -1407,10 +1348,6 @@
         padding: 10px 4px;
       }
 
-      .account-form-grid {
-        grid-template-columns: 1fr;
-      }
-
       .actions {
         flex-direction: column;
         align-items: stretch;
@@ -1575,28 +1512,10 @@
 
       <div class="asset-panel">
         <div class="asset-head">
-          <p id="assetReportTitle" class="asset-title">資產總覽（流動資產）</p>
+          <p id="assetReportTitle" class="asset-title">帳戶總金額</p>
           <span id="assetReportValue" class="asset-value">$0</span>
         </div>
-        <p id="assetWeightedValue" class="asset-weighted">權重後資產：$0</p>
-        <div class="asset-scope">
-          <button id="assetScopeLiquidBtn" type="button" class="scope-btn active">流動資產</button>
-          <button id="assetScopeAllBtn" type="button" class="scope-btn">全部資產</button>
-        </div>
-        <div class="account-manager">
-          <p class="project-manager-title">帳戶設定（開帳 / 資產管理）</p>
-          <div class="account-form-grid">
-            <input id="accountNameInput" type="text" placeholder="帳戶名稱（如：現金）" />
-            <select id="accountTypeSelect">
-              <option value="liquid">流動資產</option>
-              <option value="long_term">長期資產</option>
-            </select>
-            <input id="accountWeightInput" type="number" min="0" step="0.1" placeholder="權重" value="1" />
-            <input id="accountBalanceInput" type="number" min="0" step="1" placeholder="期初餘額 / 當前金額" />
-            <button type="button" id="saveInitialBalanceBtn" class="btn-inline">設定期初餘額</button>
-          </div>
-          <div id="accountList" class="account-list"></div>
-        </div>
+        <a class="btn-link" href="accounts.html">前往資產設定</a>
       </div>
 
       <div class="summary-grid">
@@ -1833,9 +1752,9 @@
       { id: "hobby-chicken", name: "興趣養雞", icon: "🐔", keywords: ["雞舍", "飼料"] }
     ];
     const DEFAULT_ACCOUNTS = [
-      { id: "acc-cash", name: "現金", assetType: "liquid", weight: 1, currentAmount: 0 },
-      { id: "acc-bank", name: "活存", assetType: "liquid", weight: 1, currentAmount: 0 },
-      { id: "acc-fund", name: "基金", assetType: "long_term", weight: 1, currentAmount: 0 }
+      { id: "acc-cash", name: "現金", assetType: "liquid", currentAmount: 0 },
+      { id: "acc-bank", name: "活存", assetType: "liquid", currentAmount: 0 },
+      { id: "acc-fund", name: "基金", assetType: "long_term", currentAmount: 0 }
     ];
 
     const form = document.getElementById("recordForm");
@@ -1864,12 +1783,6 @@
     const projectManagerPanel = document.getElementById("projectManagerPanel");
     const projectManagerToggleBtn = document.getElementById("projectManagerToggleBtn");
     const recordAccountSelect = document.getElementById("recordAccount");
-    const accountNameInput = document.getElementById("accountNameInput");
-    const accountTypeSelect = document.getElementById("accountTypeSelect");
-    const accountWeightInput = document.getElementById("accountWeightInput");
-    const accountBalanceInput = document.getElementById("accountBalanceInput");
-    const saveInitialBalanceBtn = document.getElementById("saveInitialBalanceBtn");
-    const accountList = document.getElementById("accountList");
 
     const balanceEl = document.getElementById("balance");
     const totalIncomeEl = document.getElementById("totalIncome");
@@ -1889,9 +1802,6 @@
     const supportIncomeValue = document.getElementById("supportIncomeValue");
     const assetReportTitle = document.getElementById("assetReportTitle");
     const assetReportValue = document.getElementById("assetReportValue");
-    const assetWeightedValue = document.getElementById("assetWeightedValue");
-    const assetScopeLiquidBtn = document.getElementById("assetScopeLiquidBtn");
-    const assetScopeAllBtn = document.getElementById("assetScopeAllBtn");
 
     const robotBtn = document.getElementById("robotBtn");
     const robotPanel = document.getElementById("robotPanel");
@@ -1920,7 +1830,6 @@
     let lastPoint = { x: 0, y: 0 };
     let pieScope = "month";
     let splitEnabled = false;
-    let assetScope = "liquid";
     let editingRecordId = null;
     let editingProjectId = null;
     let draggingProjectId = null;
@@ -2106,13 +2015,11 @@
           if (!name) return null;
           const id = String(account.id || `acc-${Date.now()}-${index}`).trim();
           const assetType = account.assetType === "long_term" ? "long_term" : "liquid";
-          const weightValue = Number(account.weight);
           const currentValue = Number(account.currentAmount);
           return {
             id,
             name,
             assetType,
-            weight: Number.isFinite(weightValue) && weightValue >= 0 ? weightValue : 1,
             currentAmount: Number.isFinite(currentValue) && currentValue >= 0 ? currentValue : 0
           };
         })
@@ -2153,101 +2060,14 @@
       }
     }
 
-    function renderAccountList() {
-      if (!accountList) return;
-      accountList.innerHTML = "";
-      accounts.forEach((account) => {
-        const row = document.createElement("div");
-        row.className = "account-item";
-        row.innerHTML = `
-          <div>
-            <div>${escapeHtml(account.name)}</div>
-            <div class="account-meta">${account.assetType === "long_term" ? "長期資產" : "流動資產"} ｜ 權重 ${account.weight}</div>
-          </div>
-          <strong>${currency.format(Number(account.currentAmount || 0))}</strong>
-        `;
-        accountList.appendChild(row);
-      });
-    }
-
     function renderAssetSummary() {
-      const filtered = accounts.filter((account) => assetScope === "all" || account.assetType === "liquid");
-      const total = filtered.reduce((sum, account) => sum + Number(account.currentAmount || 0), 0);
-      const weighted = filtered.reduce((sum, account) => sum + Number(account.currentAmount || 0) * Number(account.weight || 0), 0);
+      const total = accounts.reduce((sum, account) => sum + Number(account.currentAmount || 0), 0);
       if (assetReportTitle) {
-        assetReportTitle.textContent = assetScope === "all" ? "資產總覽（全部資產）" : "資產總覽（流動資產）";
+        assetReportTitle.textContent = "帳戶總金額";
       }
       if (assetReportValue) {
         assetReportValue.textContent = currency.format(total);
       }
-      if (assetWeightedValue) {
-        assetWeightedValue.textContent = `權重後資產：${currency.format(weighted)}`;
-      }
-      if (assetScopeLiquidBtn && assetScopeAllBtn) {
-        assetScopeLiquidBtn.classList.toggle("active", assetScope === "liquid");
-        assetScopeAllBtn.classList.toggle("active", assetScope === "all");
-      }
-    }
-
-    function upsertAccountWithInitialBalance() {
-      const name = String(accountNameInput ? accountNameInput.value : "").trim();
-      const amount = Number(accountBalanceInput ? accountBalanceInput.value : "");
-      const rawWeight = Number(accountWeightInput ? accountWeightInput.value : "1");
-      const assetType = accountTypeSelect && accountTypeSelect.value === "long_term" ? "long_term" : "liquid";
-
-      if (!name) {
-        alert("請輸入帳戶名稱。");
-        return;
-      }
-      if (!Number.isFinite(amount) || amount < 0) {
-        alert("請輸入有效的期初餘額。");
-        return;
-      }
-      if (!Number.isFinite(rawWeight) || rawWeight < 0) {
-        alert("權重不可小於 0。");
-        return;
-      }
-
-      const existing = accounts.find((account) => account.name === name);
-      const accountId = existing ? existing.id : `acc-${Date.now()}`;
-      const normalized = {
-        id: accountId,
-        name,
-        assetType,
-        weight: rawWeight,
-        currentAmount: amount
-      };
-
-      if (existing) {
-        accounts = accounts.map((account) => (account.id === accountId ? normalized : account));
-      } else {
-        accounts.push(normalized);
-      }
-      saveAccounts();
-      renderAccountOptions();
-      renderAccountList();
-      renderAssetSummary();
-
-      records = records.filter((record) => !(record.recordKind === RECORD_KIND_INITIAL_BALANCE && record.accountId === accountId));
-      records.push({
-        id: crypto.randomUUID(),
-        date: dateInput.value || new Date().toISOString().slice(0, 10),
-        type: "income",
-        itemName: `${name} 期初餘額`,
-        category: "期初餘額",
-        projectId: "none",
-        accountId,
-        amount,
-        note: "開帳",
-        myShare: null,
-        susieShare: null,
-        recordKind: RECORD_KIND_INITIAL_BALANCE
-      });
-      saveRecords();
-      renderRecords();
-      showToast("已設定期初餘額（不計入本月收入）");
-
-      if (accountBalanceInput) accountBalanceInput.value = "";
     }
 
     function renderProjectOptions() {
@@ -2963,19 +2783,6 @@
     projectManagerToggleBtn.addEventListener("click", () => {
       setProjectManagerOpen(projectManagerPanel.hidden);
     });
-    if (assetScopeLiquidBtn && assetScopeAllBtn) {
-      assetScopeLiquidBtn.addEventListener("click", () => {
-        assetScope = "liquid";
-        renderAssetSummary();
-      });
-      assetScopeAllBtn.addEventListener("click", () => {
-        assetScope = "all";
-        renderAssetSummary();
-      });
-    }
-    if (saveInitialBalanceBtn) {
-      saveInitialBalanceBtn.addEventListener("click", upsertAccountWithInitialBalance);
-    }
     typeIncomeBtn.addEventListener("click", () => setType("income"));
     typeExpenseBtn.addEventListener("click", () => setType("expense"));
     amountInput.addEventListener("input", refreshSplitHint);
@@ -3313,7 +3120,6 @@
         renderProjectOptions();
         renderProjectManager();
         renderAccountOptions();
-        renderAccountList();
         renderAssetSummary();
       });
     });
@@ -3338,7 +3144,6 @@
       renderProjectOptions();
       renderProjectManager();
       renderAccountOptions();
-      renderAccountList();
       renderAssetSummary();
       setPieScope("month");
       renderRecords();

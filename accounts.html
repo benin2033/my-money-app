@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>資產設定</title>
+  <style>
+    :root {
+      --bg: #f7efe2;
+      --card: #fffaf4;
+      --line: #e5d7c8;
+      --text: #46362d;
+      --subtle: #7a6357;
+      --accent: #b57542;
+      --accent-deep: #975d33;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      padding: 16px;
+    }
+    .wrap {
+      width: 100%;
+      max-width: 820px;
+      margin: 0 auto;
+      display: grid;
+      gap: 12px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+    p {
+      margin: 0;
+      color: var(--subtle);
+      font-size: 0.9rem;
+    }
+    .grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1.2fr 0.8fr 1fr auto;
+    }
+    input, select, button, a {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-height: 44px;
+      font-size: 0.92rem;
+      color: var(--text);
+      background: #fff9f2;
+      text-decoration: none;
+    }
+    button {
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff8f0;
+    }
+    .btn-primary:hover {
+      background: var(--accent-deep);
+      border-color: var(--accent-deep);
+    }
+    .btn-ghost {
+      background: #fffdf9;
+    }
+    .btn-danger {
+      background: #fff2f0;
+      border-color: #e3c8c2;
+      color: #8b4a42;
+    }
+    .list {
+      display: grid;
+      gap: 8px;
+    }
+    .row {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fffdf9;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .meta {
+      color: var(--subtle);
+      font-size: 0.82rem;
+    }
+    .row-actions {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .row-actions button {
+      min-height: 36px;
+      padding: 6px 10px;
+      font-size: 0.82rem;
+    }
+    .head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 520px) {
+      body { padding: 10px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <div class="head">
+        <h1>資產設定（開帳）</h1>
+        <a href="./index.html">返回記帳首頁</a>
+      </div>
+      <p>設定帳戶目前金額時，系統會自動建立/更新一筆 <strong>INITIAL_BALANCE</strong>，且不列入本月收入。</p>
+    </section>
+
+    <section class="card">
+      <div class="grid">
+        <input id="accountName" type="text" placeholder="帳戶名稱（如：現金）" />
+        <select id="assetType">
+          <option value="liquid">流動資產</option>
+          <option value="long_term">長期資產</option>
+        </select>
+        <input id="currentAmount" type="number" min="0" step="1" placeholder="當前金額" />
+        <button id="saveBtn" type="button" class="btn-primary">儲存</button>
+      </div>
+      <div class="grid" style="grid-template-columns: 1fr;">
+        <button id="cancelEditBtn" type="button" class="btn-ghost">取消編輯</button>
+      </div>
+      <div id="accountList" class="list"></div>
+    </section>
+  </main>
+
+  <script>
+    const ACCOUNT_STORAGE_KEY = "money-app-accounts-v1";
+    const RECORD_STORAGE_KEY = "money-app-records-v1";
+    const RECORD_KIND_INITIAL_BALANCE = "INITIAL_BALANCE";
+    const DEFAULT_ACCOUNTS = [
+      { id: "acc-cash", name: "現金", assetType: "liquid", currentAmount: 0 },
+      { id: "acc-bank", name: "活存", assetType: "liquid", currentAmount: 0 },
+      { id: "acc-fund", name: "基金", assetType: "long_term", currentAmount: 0 }
+    ];
+    const currency = new Intl.NumberFormat("zh-TW", { style: "currency", currency: "TWD", maximumFractionDigits: 0 });
+
+    const accountNameInput = document.getElementById("accountName");
+    const assetTypeSelect = document.getElementById("assetType");
+    const currentAmountInput = document.getElementById("currentAmount");
+    const saveBtn = document.getElementById("saveBtn");
+    const cancelEditBtn = document.getElementById("cancelEditBtn");
+    const accountList = document.getElementById("accountList");
+
+    let accounts = [];
+    let records = [];
+    let editingAccountId = null;
+
+    function normalizeAccounts(input) {
+      const seed = Array.isArray(input) && input.length ? input : DEFAULT_ACCOUNTS;
+      const normalized = seed.map((account, index) => {
+        if (!account || typeof account.name !== "string") return null;
+        const name = account.name.trim();
+        if (!name) return null;
+        const id = String(account.id || `acc-${Date.now()}-${index}`).trim();
+        const assetType = account.assetType === "long_term" ? "long_term" : "liquid";
+        const amount = Number(account.currentAmount);
+        return { id, name, assetType, currentAmount: Number.isFinite(amount) && amount >= 0 ? amount : 0 };
+      }).filter(Boolean);
+      return normalized.length ? normalized : DEFAULT_ACCOUNTS.slice();
+    }
+
+    function loadData() {
+      try {
+        const rawAccounts = localStorage.getItem(ACCOUNT_STORAGE_KEY);
+        accounts = normalizeAccounts(rawAccounts ? JSON.parse(rawAccounts) : null);
+      } catch {
+        accounts = normalizeAccounts(null);
+      }
+      try {
+        const rawRecords = localStorage.getItem(RECORD_STORAGE_KEY);
+        const parsedRecords = rawRecords ? JSON.parse(rawRecords) : [];
+        records = Array.isArray(parsedRecords) ? parsedRecords : [];
+      } catch {
+        records = [];
+      }
+    }
+
+    function saveAccounts() {
+      localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(accounts));
+    }
+
+    function saveRecords() {
+      localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function escapeHtml(text) {
+      return String(text || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function resetForm() {
+      editingAccountId = null;
+      saveBtn.textContent = "儲存";
+      accountNameInput.value = "";
+      assetTypeSelect.value = "liquid";
+      currentAmountInput.value = "";
+    }
+
+    function renderAccounts() {
+      accountList.innerHTML = "";
+      accounts.forEach((account) => {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.dataset.id = account.id;
+        row.innerHTML = `
+          <div>
+            <div>${escapeHtml(account.name)}</div>
+            <div class="meta">${account.assetType === "long_term" ? "長期資產" : "流動資產"}</div>
+          </div>
+          <div class="row-actions">
+            <strong>${currency.format(Number(account.currentAmount || 0))}</strong>
+            <button type="button" class="btn-ghost" data-action="edit" data-id="${account.id}">編輯</button>
+            <button type="button" class="btn-danger" data-action="delete" data-id="${account.id}">刪除</button>
+          </div>
+        `;
+        accountList.appendChild(row);
+      });
+    }
+
+    function saveInitialBalance() {
+      const isEditing = Boolean(editingAccountId);
+      const name = String(accountNameInput.value || "").trim();
+      const amount = Number(currentAmountInput.value);
+      const assetType = assetTypeSelect.value === "long_term" ? "long_term" : "liquid";
+      if (!name) {
+        alert("請輸入帳戶名稱。");
+        return;
+      }
+      if (!Number.isFinite(amount) || amount < 0) {
+        alert("請輸入有效金額。");
+        return;
+      }
+
+      const existingById = editingAccountId ? accounts.find((account) => account.id === editingAccountId) : null;
+      const existingByName = accounts.find((account) => account.name === name);
+      const accountId = existingById
+        ? existingById.id
+        : (existingByName ? existingByName.id : `acc-${Date.now()}`);
+      const next = { id: accountId, name, assetType, currentAmount: amount };
+      if (accounts.some((account) => account.id === accountId)) {
+        accounts = accounts.map((account) => (account.id === accountId ? next : account));
+      } else {
+        accounts.push(next);
+      }
+
+      records = records.filter((record) => !(record.recordKind === RECORD_KIND_INITIAL_BALANCE && record.accountId === accountId));
+      records.push({
+        id: crypto.randomUUID(),
+        date: new Date().toISOString().slice(0, 10),
+        type: "income",
+        itemName: `${name} 期初餘額`,
+        category: "期初餘額",
+        projectId: "none",
+        accountId,
+        amount,
+        note: "開帳",
+        myShare: null,
+        susieShare: null,
+        recordKind: RECORD_KIND_INITIAL_BALANCE
+      });
+
+      saveAccounts();
+      saveRecords();
+      renderAccounts();
+      resetForm();
+      alert(isEditing ? "已更新帳戶與期初餘額。" : "已儲存帳戶與期初餘額。");
+    }
+
+    function beginEditAccount(accountId) {
+      const target = accounts.find((account) => account.id === accountId);
+      if (!target) return;
+      editingAccountId = accountId;
+      accountNameInput.value = target.name;
+      assetTypeSelect.value = target.assetType === "long_term" ? "long_term" : "liquid";
+      currentAmountInput.value = String(Number(target.currentAmount || 0));
+      saveBtn.textContent = "更新";
+      accountNameInput.focus();
+    }
+
+    function deleteAccount(accountId) {
+      if (accounts.length <= 1) {
+        alert("至少需要保留一個帳戶。");
+        return;
+      }
+      const target = accounts.find((account) => account.id === accountId);
+      if (!target) return;
+      const ok = confirm(`確定要刪除「${target.name}」嗎？`);
+      if (!ok) return;
+
+      const fallback = accounts.find((account) => account.id !== accountId);
+      if (!fallback) return;
+      accounts = accounts.filter((account) => account.id !== accountId);
+
+      records = records
+        .filter((record) => !(record.recordKind === RECORD_KIND_INITIAL_BALANCE && record.accountId === accountId))
+        .map((record) => {
+          if (record.accountId === accountId) {
+            return { ...record, accountId: fallback.id };
+          }
+          return record;
+        });
+
+      saveAccounts();
+      saveRecords();
+      if (editingAccountId === accountId) {
+        resetForm();
+      }
+      renderAccounts();
+    }
+
+    accountList.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const button = target.closest("button");
+      if (!(button instanceof HTMLButtonElement)) return;
+      const action = button.dataset.action;
+      const accountId = button.dataset.id;
+      if (!action || !accountId) return;
+      if (action === "edit") {
+        beginEditAccount(accountId);
+      } else if (action === "delete") {
+        deleteAccount(accountId);
+      }
+    });
+
+    saveBtn.addEventListener("click", saveInitialBalance);
+    cancelEditBtn.addEventListener("click", resetForm);
+    loadData();
+    saveAccounts();
+    renderAccounts();
+  </script>
+</body>
+</html>
