@@ -387,6 +387,17 @@
       gap: 8px;
     }
 
+    .payment-method-switch {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .payment-method-switch .type-btn {
+      font-size: 0.86rem;
+      padding: 8px 6px;
+    }
+
     .type-btn.active {
       background: var(--accent);
       border-color: var(--accent);
@@ -1484,6 +1495,7 @@
           <span id="syncStatus" class="sync-status" title="雲端同步狀態"></span>
           <button type="button" id="syncConfigToggle" class="btn-link">雲端同步設定</button>
           <a class="btn-link" href="categories.html">管理類別</a>
+          <a class="btn-link" href="credit-cards.html">信用卡管理</a>
         </div>
       </div>
 
@@ -1516,6 +1528,14 @@
           <span id="assetReportValue" class="asset-value">$0</span>
         </div>
         <a class="btn-link" href="accounts.html">前往資產設定</a>
+      </div>
+
+      <div class="safety-card">
+        <div class="safety-head">
+          <p class="safety-title">應付帳款總額</p>
+          <span id="payableTotalValue" class="safety-value">$0</span>
+        </div>
+        <p id="nextDueDateHint" class="sync-config-hint" style="margin:0;font-size:0.82rem;">下次繳款日：-</p>
       </div>
 
       <div class="summary-grid">
@@ -1596,6 +1616,19 @@
           <select id="recordAccount" name="recordAccount" required></select>
         </div>
 
+        <div id="paymentMethodField" class="field col-2" hidden>
+          <label>支付方式</label>
+          <div class="payment-method-switch">
+            <button type="button" id="payCashBtn" class="type-btn">現金</button>
+            <button type="button" id="payCreditBtn" class="type-btn">信用卡</button>
+            <button type="button" id="payProxyBtn" class="type-btn">代刷</button>
+          </div>
+        </div>
+        <div id="creditCardField" class="field col-2" hidden>
+          <label for="recordCreditCard">信用卡</label>
+          <select id="recordCreditCard" name="recordCreditCard"></select>
+        </div>
+
         <div class="field col-2">
           <label for="amount">金額</label>
           <div class="input-with-btn">
@@ -1663,6 +1696,14 @@
           <tbody id="recordBody"></tbody>
         </table>
       </div>
+
+      <div class="list-wrap">
+        <button type="button" id="proxyListToggleBtn" class="btn-inline project-manager-toggle">展開代刷清單</button>
+        <div id="proxyListPanel" class="project-manager" hidden>
+          <p class="project-manager-title">代刷清單（信用卡代刷，可標記已請款/未請款）</p>
+          <div id="proxyList" class="project-list"></div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -1723,6 +1764,7 @@
     const CATEGORY_STORAGE_KEY = "money-app-categories-v1";
     const PROJECT_STORAGE_KEY = "money-app-projects-v1";
     const ACCOUNT_STORAGE_KEY = "money-app-accounts-v1";
+    const CREDIT_CARD_STORAGE_KEY = "money-app-credit-cards-v1";
     const LAST_LOCAL_DATA_UPDATE_KEY = "money-app-last-local-data-update-at";
     const SUPABASE_URL_KEY = "money-app-supabase-url";
     const SUPABASE_ANON_KEY = "money-app-supabase-anon-key";
@@ -1757,6 +1799,10 @@
       { id: "acc-bank", name: "活存", assetType: "liquid", currentAmount: 0 },
       { id: "acc-fund", name: "基金", assetType: "long_term", currentAmount: 0 }
     ];
+    const DEFAULT_CREDIT_CARDS = [
+      { id: "cc-1", name: "主卡", dueDay: 15 },
+      { id: "cc-2", name: "副卡", dueDay: 25 }
+    ];
 
     const form = document.getElementById("recordForm");
     const formSubmitBtn = form ? form.querySelector('button[type="submit"]') : null;
@@ -1784,6 +1830,17 @@
     const projectManagerPanel = document.getElementById("projectManagerPanel");
     const projectManagerToggleBtn = document.getElementById("projectManagerToggleBtn");
     const recordAccountSelect = document.getElementById("recordAccount");
+    const paymentMethodField = document.getElementById("paymentMethodField");
+    const creditCardField = document.getElementById("creditCardField");
+    const recordCreditCardSelect = document.getElementById("recordCreditCard");
+    const payCashBtn = document.getElementById("payCashBtn");
+    const payCreditBtn = document.getElementById("payCreditBtn");
+    const payProxyBtn = document.getElementById("payProxyBtn");
+    const proxyListToggleBtn = document.getElementById("proxyListToggleBtn");
+    const proxyListPanel = document.getElementById("proxyListPanel");
+    const proxyList = document.getElementById("proxyList");
+    const payableTotalValueEl = document.getElementById("payableTotalValue");
+    const nextDueDateHintEl = document.getElementById("nextDueDateHint");
 
     const balanceEl = document.getElementById("balance");
     const totalIncomeEl = document.getElementById("totalIncome");
@@ -1826,11 +1883,13 @@
     let categories = [];
     let projects = [];
     let accounts = [];
+    let creditCards = [];
     let calcExpression = "0";
     let drawing = false;
     let lastPoint = { x: 0, y: 0 };
     let pieScope = "month";
     let splitEnabled = false;
+    let paymentMethod = "cash";
     let editingRecordId = null;
     let editingProjectId = null;
     let draggingProjectId = null;
@@ -1902,8 +1961,10 @@
       splitToggleBtn.disabled = isIncome;
       if (isIncome) {
         setSplitEnabled(false);
+        setPaymentMethod("cash");
       }
       renderCategoryOptions();
+      updatePaymentMethodVisibility();
     }
 
     function showToast(message) {
@@ -1949,6 +2010,15 @@
           recordAccountSelect.value = target.accountId;
         } else if (recordAccountSelect.options.length > 0) {
           recordAccountSelect.value = recordAccountSelect.options[0].value;
+        }
+      }
+      setPaymentMethod(target.paymentMethod || "cash");
+      updatePaymentMethodVisibility();
+      if (recordCreditCardSelect && (target.paymentMethod === "credit_card" || target.paymentMethod === "proxy")) {
+        if (target.creditCardId && Array.from(recordCreditCardSelect.options).some((o) => o.value === target.creditCardId)) {
+          recordCreditCardSelect.value = target.creditCardId;
+        } else if (recordCreditCardSelect.options.length > 0) {
+          recordCreditCardSelect.value = recordCreditCardSelect.options[0].value;
         }
       }
 
@@ -2053,6 +2123,75 @@
       saveToCloud();
     }
 
+    function normalizeCreditCards(input) {
+      const seed = Array.isArray(input) && input.length ? input : DEFAULT_CREDIT_CARDS;
+      const normalized = seed
+        .map((card, index) => {
+          if (!card || typeof card.name !== "string") return null;
+          const name = card.name.trim();
+          if (!name) return null;
+          const id = String(card.id || `cc-${Date.now()}-${index}`).trim();
+          const dueDay = Math.min(28, Math.max(1, Number(card.dueDay) || 15));
+          return { id, name, dueDay };
+        })
+        .filter(Boolean);
+      return normalized.length ? normalized : DEFAULT_CREDIT_CARDS.slice();
+    }
+
+    function loadCreditCards() {
+      try {
+        const raw = localStorage.getItem(CREDIT_CARD_STORAGE_KEY);
+        creditCards = normalizeCreditCards(raw ? JSON.parse(raw) : null);
+      } catch {
+        creditCards = normalizeCreditCards(null);
+      }
+      const stored = localStorage.getItem(CREDIT_CARD_STORAGE_KEY);
+      if (!stored) {
+        localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(creditCards));
+      }
+    }
+
+    function saveCreditCards() {
+      markLocalDataUpdated();
+      localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(creditCards));
+      saveToCloud();
+    }
+
+    function renderCreditCardOptions() {
+      if (!recordCreditCardSelect) return;
+      const selected = recordCreditCardSelect.value;
+      recordCreditCardSelect.innerHTML = "";
+      creditCards.forEach((card, index) => {
+        const option = document.createElement("option");
+        option.value = card.id;
+        option.textContent = `${card.name}（${card.dueDay}日繳款）`;
+        recordCreditCardSelect.appendChild(option);
+        if (index === 0) recordCreditCardSelect.value = card.id;
+      });
+      if (selected && creditCards.some((c) => c.id === selected)) {
+        recordCreditCardSelect.value = selected;
+      }
+    }
+
+    function setPaymentMethod(method) {
+      paymentMethod = method === "proxy" ? "proxy" : method === "credit_card" ? "credit_card" : "cash";
+      if (payCashBtn) payCashBtn.classList.toggle("active", paymentMethod === "cash");
+      if (payCreditBtn) payCreditBtn.classList.toggle("active", paymentMethod === "credit_card");
+      if (payProxyBtn) payProxyBtn.classList.toggle("active", paymentMethod === "proxy");
+      if (creditCardField) {
+        creditCardField.hidden = paymentMethod === "cash";
+      }
+      if (recordCreditCardSelect && creditCards.length > 0 && paymentMethod !== "cash") {
+        if (!recordCreditCardSelect.value) recordCreditCardSelect.value = creditCards[0].id;
+      }
+    }
+
+    function updatePaymentMethodVisibility() {
+      const isExpense = typeInput.value === "expense";
+      if (paymentMethodField) paymentMethodField.hidden = !isExpense;
+      if (creditCardField) creditCardField.hidden = !isExpense || paymentMethod === "cash";
+    }
+
     function renderAccountOptions() {
       if (!recordAccountSelect) return;
       const selected = recordAccountSelect.value;
@@ -2079,6 +2218,115 @@
       if (assetReportValue) {
         assetReportValue.textContent = currency.format(total);
       }
+    }
+
+    function getBillingCycleForCard(card, asOf) {
+      const d = asOf || new Date();
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const day = d.getDate();
+      const dueDay = Math.min(28, Math.max(1, Number(card.dueDay) || 15));
+      let nextDue;
+      if (day < dueDay) {
+        nextDue = new Date(year, month, dueDay);
+      } else {
+        nextDue = new Date(year, month + 1, dueDay);
+      }
+      const cycleEnd = new Date(nextDue.getTime());
+      const cycleStart = new Date(nextDue.getFullYear(), nextDue.getMonth() - 1, nextDue.getDate() + 1);
+      const fmt = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+      return { start: fmt(cycleStart), end: fmt(cycleEnd) };
+    }
+
+    function getNextDueDate(card) {
+      const d = new Date();
+      let month = d.getMonth();
+      let year = d.getFullYear();
+      const dueDay = Math.min(28, Math.max(1, Number(card.dueDay) || 15));
+      if (d.getDate() >= dueDay) {
+        month += 1;
+        if (month > 11) {
+          month = 0;
+          year += 1;
+        }
+      }
+      const next = new Date(year, month, dueDay);
+      return `${next.getFullYear()}/${String(next.getMonth() + 1).padStart(2, "0")}/${String(next.getDate()).padStart(2, "0")}`;
+    }
+
+    function computePayableSummary() {
+      const now = new Date();
+      let creditCardPayable = 0;
+      const cardDetails = [];
+      creditCards.forEach((card) => {
+        const { start, end } = getBillingCycleForCard(card, now);
+        const amount = records
+          .filter((r) => r.type === "expense" && r.paymentMethod === "credit_card" && r.creditCardId === card.id)
+          .filter((r) => {
+            const d = String(r.date || "");
+            return d >= start && d <= end;
+          })
+          .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        creditCardPayable += amount;
+        if (amount > 0) cardDetails.push({ card, amount, nextDue: getNextDueDate(card) });
+      });
+      const proxyUnrequested = records
+        .filter((r) => r.type === "expense" && r.paymentMethod === "proxy" && !r.reimbursementRequested)
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const totalPayable = creditCardPayable + proxyUnrequested;
+      return { creditCardPayable, proxyUnrequested, totalPayable, cardDetails };
+    }
+
+    function renderPayableSummary() {
+      const { totalPayable, cardDetails, proxyUnrequested } = computePayableSummary();
+      if (payableTotalValueEl) payableTotalValueEl.textContent = currency.format(totalPayable);
+      if (nextDueDateHintEl) {
+        const parts = [];
+        if (cardDetails.length) {
+          parts.push(...cardDetails.map((d) => `${d.card.name} 應繳 ${currency.format(d.amount)}，${d.nextDue} 繳款`));
+        }
+        if (proxyUnrequested > 0) {
+          parts.push(`代刷待請款 ${currency.format(proxyUnrequested)}`);
+        }
+        nextDueDateHintEl.textContent = parts.length ? parts.join("；") : "下次繳款日：-";
+      }
+    }
+
+    function renderProxyList() {
+      if (!proxyList) return;
+      const items = records
+        .filter((r) => r.type === "expense" && r.paymentMethod === "proxy")
+        .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+      proxyList.innerHTML = "";
+      if (!items.length) {
+        const p = document.createElement("p");
+        p.className = "sync-config-hint";
+        p.textContent = "尚無代刷紀錄。";
+        proxyList.appendChild(p);
+        return;
+      }
+      items.forEach((record) => {
+        const row = document.createElement("div");
+        row.className = "project-item";
+        row.dataset.id = record.id;
+        const requested = !!record.reimbursementRequested;
+        row.innerHTML = `
+          <div class="project-view">
+            ${escapeHtml(record.date || "-")}｜${escapeHtml(record.itemName || "-")}｜${currency.format(Number(record.amount || 0))}
+          </div>
+          <div class="project-item-actions">
+            <button type="button" class="tiny-btn ${requested ? "active" : ""}" data-action="toggle" data-id="${record.id}">${requested ? "已請款" : "未請款"}</button>
+          </div>
+        `;
+        proxyList.appendChild(row);
+      });
+    }
+
+    function setProxyListOpen(open) {
+      if (!proxyListPanel || !proxyListToggleBtn) return;
+      proxyListPanel.hidden = !open;
+      proxyListPanel.style.display = open ? "grid" : "none";
+      proxyListToggleBtn.textContent = open ? "收起代刷清單" : "展開代刷清單";
     }
 
     function renderProjectOptions() {
@@ -2208,6 +2456,7 @@
         const cloudCategories = payload.categories != null ? payload.categories : null;
         const cloudProjects = payload.projects != null ? payload.projects : null;
         const cloudAccounts = payload.accounts != null ? payload.accounts : null;
+        const cloudCreditCards = payload.creditCards != null ? payload.creditCards : null;
 
         if (cloudCategories != null) {
           localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(cloudCategories));
@@ -2220,6 +2469,10 @@
         if (cloudAccounts != null) {
           localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(cloudAccounts));
           accounts = normalizeAccounts(cloudAccounts);
+        }
+        if (cloudCreditCards != null) {
+          localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(cloudCreditCards));
+          creditCards = normalizeCreditCards(cloudCreditCards);
         }
         if (cloudRecords.length >= 0) {
           localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(cloudRecords));
@@ -2236,7 +2489,8 @@
           records: records,
           categories: categories,
           projects: projects,
-          accounts: accounts
+          accounts: accounts,
+          creditCards: creditCards
         };
         const endpoint = `${url}/rest/v1/${SYNC_TABLE}?on_conflict=${SYNC_KEY_COLUMN}`;
         await fetch(endpoint, {
@@ -2344,6 +2598,9 @@
           next.susieShare = Number.isFinite(Number(next.susieShare)) ? Number(next.susieShare) : null;
           next.accountId = String(next.accountId || defaultAccountId);
           next.recordKind = String(next.recordKind || "");
+          next.paymentMethod = next.type === "expense" ? (next.paymentMethod || "cash") : "cash";
+          next.creditCardId = next.creditCardId || "";
+          next.reimbursementRequested = !!next.reimbursementRequested;
           return next;
         });
     }
@@ -2392,6 +2649,8 @@
       drawExpensePie(pieScope);
       renderIncomeAnalysis(pieScope, currentMonth, currentYear);
       renderAssetSummary();
+      renderPayableSummary();
+      renderProxyList();
     }
 
     function createRecordRow(record) {
@@ -2427,6 +2686,14 @@
         ? `<span class="tag">INITIAL_BALANCE</span>`
         : "";
       const accountTag = account ? `<span class="tag">${escapeHtml(account.name)}</span>` : "";
+      const payTag = record.type === "expense" && record.paymentMethod === "credit_card"
+        ? (() => {
+            const card = creditCards.find((c) => c.id === record.creditCardId);
+            return card ? `<span class="tag">信用卡 ${escapeHtml(card.name)}</span>` : `<span class="tag">信用卡</span>`;
+          })()
+        : record.type === "expense" && record.paymentMethod === "proxy"
+          ? `<span class="tag">代刷${record.reimbursementRequested ? "已請款" : "未請款"}</span>`
+          : "";
 
       tr.innerHTML = `
         <td class="cell-date">${escapeHtml(record.date || "-")}</td>
@@ -2437,6 +2704,7 @@
             <span class="tag tag-category">${escapeHtml(categoryName)}</span>
             ${initialTag}
             ${accountTag}
+            ${payTag}
             ${projectTag}
             ${supportTag}
           </span>
@@ -2718,6 +2986,7 @@
         return;
       }
 
+      const pm = typeInput.value === "expense" ? paymentMethod : "cash";
       const record = {
         id: editingRecordId || crypto.randomUUID(),
         date: dateInput.value,
@@ -2726,6 +2995,9 @@
         category: categorySelect.value,
         projectId: projectSelect.value,
         accountId: recordAccountSelect ? recordAccountSelect.value : "",
+        paymentMethod: pm,
+        creditCardId: (pm === "credit_card" || pm === "proxy") && recordCreditCardSelect ? recordCreditCardSelect.value : "",
+        reimbursementRequested: pm === "proxy" ? (editingRecord ? !!editingRecord.reimbursementRequested : false) : false,
         amount,
         note: noteInput.value.trim(),
         myShare: null,
@@ -2785,6 +3057,8 @@
         autoClassifyHint.textContent = "";
         renderCategoryOptions();
         projectSelect.value = "none";
+        setPaymentMethod("cash");
+        updatePaymentMethodVisibility();
         if (recordAccountSelect && recordAccountSelect.options.length > 0) {
           recordAccountSelect.value = recordAccountSelect.options[0].value;
         }
@@ -2801,6 +3075,14 @@
     projectManagerToggleBtn.addEventListener("click", () => {
       setProjectManagerOpen(projectManagerPanel.hidden);
     });
+    if (proxyListToggleBtn && proxyListPanel) {
+      proxyListToggleBtn.addEventListener("click", () => {
+        setProxyListOpen(proxyListPanel.hidden);
+      });
+    }
+    if (payCashBtn) payCashBtn.addEventListener("click", () => setPaymentMethod("cash"));
+    if (payCreditBtn) payCreditBtn.addEventListener("click", () => setPaymentMethod("credit_card"));
+    if (payProxyBtn) payProxyBtn.addEventListener("click", () => setPaymentMethod("proxy"));
     typeIncomeBtn.addEventListener("click", () => setType("income"));
     typeExpenseBtn.addEventListener("click", () => setType("expense"));
     amountInput.addEventListener("input", refreshSplitHint);
@@ -2980,6 +3262,26 @@
       }
     });
 
+    if (proxyList) {
+      proxyList.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const button = target.closest("button");
+        if (!(button instanceof HTMLButtonElement)) return;
+        if (button.dataset.action !== "toggle") return;
+        const id = button.dataset.id;
+        if (!id) return;
+        const record = records.find((r) => r.id === id);
+        if (!record) return;
+        record.reimbursementRequested = !record.reimbursementRequested;
+        saveRecords();
+        renderProxyList();
+        renderRecords();
+        renderPayableSummary();
+        showToast(record.reimbursementRequested ? "已標記為已請款" : "已標記為未請款");
+      });
+    }
+
     robotBtn.addEventListener("click", () => {
       robotPanel.classList.toggle("show");
       robotPanel.setAttribute("aria-hidden", robotPanel.classList.contains("show") ? "false" : "true");
@@ -3133,12 +3435,16 @@
         loadCategories();
         loadProjects();
         loadAccounts();
+        loadCreditCards();
         renderRecords();
         renderCategoryOptions();
         renderProjectOptions();
         renderProjectManager();
         renderAccountOptions();
+        renderCreditCardOptions();
         renderAssetSummary();
+        renderPayableSummary();
+        renderProxyList();
       });
     });
     window.addEventListener("offline", updateSyncStatus);
@@ -3146,10 +3452,14 @@
     // 從其他頁返回（例如資產設定頁）時，確保用最新本機資料重繪。
     function refreshFromLocalStorage() {
       loadAccounts();
+      loadCreditCards();
       loadRecords();
       renderAccountOptions();
+      renderCreditCardOptions();
       renderRecords();
       renderAssetSummary();
+      renderPayableSummary();
+      renderProxyList();
     }
 
     window.addEventListener("pageshow", () => {
@@ -3171,17 +3481,25 @@
       loadCategories();
       loadProjects();
       loadAccounts();
+      loadCreditCards();
       await loadFromCloud();
       loadRecords();
       loadCategories();
       loadProjects();
       loadAccounts();
+      loadCreditCards();
       setType("income");
+      setPaymentMethod("cash");
+      updatePaymentMethodVisibility();
       setProjectManagerOpen(false);
+      setProxyListOpen(false);
       renderProjectOptions();
       renderProjectManager();
       renderAccountOptions();
+      renderCreditCardOptions();
       renderAssetSummary();
+      renderPayableSummary();
+      renderProxyList();
       setPieScope("month");
       renderRecords();
       calcScreen.value = calcExpression;
