@@ -373,6 +373,7 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
+      min-width: 0;
     }
 
     .field label {
@@ -384,6 +385,17 @@
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 8px;
+    }
+
+    .payment-method-switch {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .payment-method-switch .type-btn {
+      font-size: 0.86rem;
+      padding: 8px 6px;
     }
 
     .type-btn.active {
@@ -445,6 +457,37 @@
       padding: 12px;
       display: grid;
       gap: 10px;
+    }
+
+    .asset-panel {
+      margin: 0 22px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff7ec;
+      padding: 10px 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .asset-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .asset-title {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--subtle);
+      font-weight: 700;
+    }
+
+    .asset-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #5e4a3e;
     }
 
     .project-manager-toggle {
@@ -636,6 +679,12 @@
       backdrop-filter: blur(4px);
     }
 
+    .records tr.editing-row {
+      outline: 2px solid rgba(181, 117, 66, 0.45);
+      outline-offset: -2px;
+      box-shadow: 0 0 0 3px rgba(181, 117, 66, 0.12);
+    }
+
     .item-wrap {
       display: inline-flex;
       align-items: center;
@@ -654,6 +703,25 @@
 
     .btn-delete:hover {
       background: #ffe6e1;
+    }
+
+    .btn-edit {
+      border-color: #d7c5b5;
+      color: #6f4d3a;
+      background: #fff7ed;
+      border-radius: 8px;
+      padding: 6px 9px;
+      font-size: 0.82rem;
+    }
+
+    .btn-edit:hover {
+      background: #f5e6d5;
+    }
+
+    input[type="date"] {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
     }
 
     .robot-btn {
@@ -846,6 +914,31 @@
       align-items: center;
     }
 
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(78px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(10px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 40;
+      background: rgba(70, 54, 45, 0.94);
+      color: #fffaf4;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      max-width: calc(100vw - 20px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     body.standalone .install-banner {
       display: none !important;
     }
@@ -908,7 +1001,8 @@
 
       .summary-grid,
       .form,
-      .list-wrap {
+      .list-wrap,
+      .asset-panel {
         padding-left: 12px;
         padding-right: 12px;
       }
@@ -1036,6 +1130,8 @@
         grid-area: actions;
         display: flex;
         justify-content: flex-end;
+        gap: 6px;
+        flex-wrap: wrap;
       }
 
       .records td.empty {
@@ -1054,6 +1150,326 @@
         height: 54px;
         right: 12px;
         bottom: calc(12px + env(safe-area-inset-bottom));
+      }
+    }
+
+    @media (max-width: 500px) {
+      body {
+        padding:
+          calc(8px + env(safe-area-inset-top))
+          8px
+          calc(112px + env(safe-area-inset-bottom));
+        font-size: 15px;
+      }
+
+      .app {
+        padding: 0 4px;
+        gap: 8px;
+      }
+
+      .header {
+        align-items: flex-start;
+      }
+
+      .header-right {
+        margin-left: auto;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .header-right .btn-link {
+        min-height: 34px;
+        padding: 6px 8px;
+        font-size: 0.76rem;
+        border-radius: 8px;
+        white-space: nowrap;
+      }
+
+      #syncStatus {
+        font-size: 0.72rem;
+        white-space: nowrap;
+      }
+
+      .header,
+      .summary-grid,
+      .form,
+      .list-wrap,
+      .sync-config-panel,
+      .asset-panel {
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .summary .stat:nth-child(n + 5) {
+        display: block;
+      }
+
+      .stat {
+        min-width: 0;
+        padding: 8px;
+      }
+
+      .stat-value {
+        font-size: 0.96rem;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .field,
+      .actions,
+      .field input,
+      .field select {
+        width: 100%;
+      }
+
+      .field input,
+      .field select,
+      .field button,
+      .btn-link,
+      button {
+        min-height: 48px;
+      }
+
+      .header-right .btn-link {
+        min-height: 34px;
+      }
+
+      #date {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        font-size: 0.9rem;
+      }
+
+      .type-switch {
+        width: 100%;
+        margin-top: 4px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .type-switch button {
+        width: 100%;
+        min-height: 50px;
+      }
+
+      .records {
+        border: none;
+        background: transparent;
+      }
+
+      .records thead {
+        display: none;
+      }
+
+      .records tbody {
+        display: grid;
+        gap: 8px;
+      }
+
+      .records tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "item amount"
+          "item amount"
+          "date date"
+          "actions actions";
+        row-gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+        background: #fffaf4;
+      }
+
+      .records td {
+        border-bottom: none;
+        padding: 0;
+        min-width: 0;
+      }
+
+      .records td.cell-type,
+      .records td.cell-note {
+        display: none;
+      }
+
+      .records td.cell-item {
+        grid-area: item;
+      }
+
+      .records td.cell-item .item-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+
+      .records td.cell-item .item-wrap > span:first-child {
+        order: 2;
+        font-size: 0.96rem;
+        font-weight: 600;
+      }
+
+      .records td.cell-item .item-wrap .tag-category {
+        order: 1;
+      }
+
+      .records td.cell-item .item-wrap .tag:not(.tag-category) {
+        order: 3;
+      }
+
+      .records td.cell-amount {
+        grid-area: amount;
+        justify-self: end;
+        align-self: start;
+        font-size: 1.05rem;
+        font-weight: 800;
+      }
+
+      .records td.cell-date {
+        grid-area: date;
+        font-size: 0.78rem;
+        color: var(--subtle);
+      }
+
+      .records td.cell-actions {
+        grid-area: actions;
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .records td.empty {
+        display: block;
+        text-align: center;
+        padding: 10px 4px;
+      }
+
+      .actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        position: static;
+      }
+
+      .actions button {
+        width: 100%;
+      }
+
+      .actions .btn-ghost,
+      .actions .btn-primary {
+        min-height: 54px;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .robot-btn {
+        width: 50px;
+        height: 50px;
+        right: 10px;
+        bottom: calc(10px + env(safe-area-inset-bottom));
+      }
+
+      .robot-panel {
+        width: min(340px, calc(100vw - 16px));
+        right: 8px;
+        bottom: calc(68px + env(safe-area-inset-bottom));
+        max-height: 60vh;
+        overflow: auto;
+      }
+
+      .toast {
+        bottom: calc(70px + env(safe-area-inset-bottom));
+        font-size: 0.78rem;
+      }
+    }
+
+    @media (max-width: 390px) {
+      body {
+        padding:
+          calc(8px + env(safe-area-inset-top))
+          8px
+          calc(126px + env(safe-area-inset-bottom));
+        font-size: 14px;
+      }
+
+      .header {
+        padding-top: 10px;
+        padding-bottom: 6px;
+      }
+
+      h1 {
+        font-size: 1.06rem;
+      }
+
+      .subtitle {
+        font-size: 0.76rem;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .pie-wrap,
+      #expensePie {
+        width: 120px;
+        height: 120px;
+      }
+
+      .records tr {
+        padding: 9px;
+        gap: 5px;
+      }
+
+      .records td.cell-amount {
+        font-size: 1rem;
+      }
+
+      .actions {
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+
+      .actions .btn-ghost,
+      .actions .btn-primary {
+        min-height: 52px;
+        font-size: 0.96rem;
+      }
+
+      .robot-btn {
+        width: 46px;
+        height: 46px;
+        right: 8px;
+      }
+
+      .robot-panel {
+        width: calc(100vw - 12px);
+        right: 6px;
+        bottom: calc(60px + env(safe-area-inset-bottom));
+      }
+
+      .header-right .btn-link {
+        min-height: 32px;
+        padding: 5px 7px;
+        font-size: 0.72rem;
+      }
+
+      .toast {
+        bottom: calc(64px + env(safe-area-inset-bottom));
       }
     }
   </style>
@@ -1079,6 +1495,7 @@
           <span id="syncStatus" class="sync-status" title="雲端同步狀態"></span>
           <button type="button" id="syncConfigToggle" class="btn-link">雲端同步設定</button>
           <a class="btn-link" href="categories.html">管理類別</a>
+          <a class="btn-link" href="credit-cards.html">信用卡管理</a>
         </div>
       </div>
 
@@ -1103,6 +1520,22 @@
           <p class="safety-title">本月可用餘額</p>
           <span id="monthAvailableValue" class="safety-value">$0</span>
         </div>
+      </div>
+
+      <div class="asset-panel">
+        <div class="asset-head">
+          <p id="assetReportTitle" class="asset-title">帳戶總金額</p>
+          <span id="assetReportValue" class="asset-value">$0</span>
+        </div>
+        <a class="btn-link" href="accounts.html">前往資產設定</a>
+      </div>
+
+      <div class="safety-card">
+        <div class="safety-head">
+          <p class="safety-title">應付帳款總額</p>
+          <span id="payableTotalValue" class="safety-value">$0</span>
+        </div>
+        <p id="nextDueDateHint" class="sync-config-hint" style="margin:0;font-size:0.82rem;">下次繳款日：-</p>
       </div>
 
       <div class="summary-grid">
@@ -1179,6 +1612,24 @@
         </div>
 
         <div class="field col-2">
+          <label for="recordAccount">帳戶</label>
+          <select id="recordAccount" name="recordAccount" required></select>
+        </div>
+
+        <div id="paymentMethodField" class="field col-2" hidden>
+          <label>支付方式</label>
+          <div class="payment-method-switch">
+            <button type="button" id="payCashBtn" class="type-btn">現金</button>
+            <button type="button" id="payCreditBtn" class="type-btn">信用卡</button>
+            <button type="button" id="payProxyBtn" class="type-btn">代刷</button>
+          </div>
+        </div>
+        <div id="creditCardField" class="field col-2" hidden>
+          <label for="recordCreditCard">信用卡</label>
+          <select id="recordCreditCard" name="recordCreditCard"></select>
+        </div>
+
+        <div class="field col-2">
           <label for="amount">金額</label>
           <div class="input-with-btn">
             <input id="amount" name="amount" type="number" min="1" step="1" placeholder="0" required />
@@ -1245,10 +1696,19 @@
           <tbody id="recordBody"></tbody>
         </table>
       </div>
+
+      <div class="list-wrap">
+        <button type="button" id="proxyListToggleBtn" class="btn-inline project-manager-toggle">展開代刷清單</button>
+        <div id="proxyListPanel" class="project-manager" hidden>
+          <p class="project-manager-title">代刷清單（信用卡代刷，可標記已請款/未請款）</p>
+          <div id="proxyList" class="project-list"></div>
+        </div>
+      </div>
     </section>
   </main>
 
   <button id="robotBtn" class="robot-btn" title="開啟小幫手">🤖</button>
+  <div id="appToast" class="toast" role="status" aria-live="polite"></div>
   <aside id="robotPanel" class="robot-panel" aria-hidden="true">
     <p class="tool-title">小幫手工具箱</p>
     <ol class="tool-list">
@@ -1303,6 +1763,9 @@
     const RECORD_STORAGE_KEY = "money-app-records-v1";
     const CATEGORY_STORAGE_KEY = "money-app-categories-v1";
     const PROJECT_STORAGE_KEY = "money-app-projects-v1";
+    const ACCOUNT_STORAGE_KEY = "money-app-accounts-v1";
+    const CREDIT_CARD_STORAGE_KEY = "money-app-credit-cards-v1";
+    const LAST_LOCAL_DATA_UPDATE_KEY = "money-app-last-local-data-update-at";
     const SUPABASE_URL_KEY = "money-app-supabase-url";
     const SUPABASE_ANON_KEY = "money-app-supabase-anon-key";
     const SUPABASE_DEFAULT_URL = "https://wbirxxapsemulrsjjqao.supabase.co";
@@ -1313,6 +1776,7 @@
     const SYNC_PAYLOAD_COLUMN = "sync_payload";
     const SYNC_UPDATED_AT_COLUMN = "sync_updated_at";
     const SUPPORT_INCOME_CATEGORY = "外部支援 (老公)";
+    const RECORD_KIND_INITIAL_BALANCE = "INITIAL_BALANCE";
     const INCOME_CATEGORIES = ["固定薪資", SUPPORT_INCOME_CATEGORY, "其他收入"];
     const DEFAULT_CATEGORIES = [
       { name: "食", keywords: ["午餐", "早餐", "晚餐", "火鍋", "飲料", "咖啡", "便當"] },
@@ -1330,8 +1794,19 @@
       { id: "susie-only", name: "Susie 專屬", icon: "👧", keywords: ["學費", "書包", "補習"] },
       { id: "hobby-chicken", name: "興趣養雞", icon: "🐔", keywords: ["雞舍", "飼料"] }
     ];
+    const DEFAULT_ACCOUNTS = [
+      { id: "acc-cash", name: "現金", assetType: "liquid", currentAmount: 0 },
+      { id: "acc-bank", name: "活存", assetType: "liquid", currentAmount: 0 },
+      { id: "acc-fund", name: "基金", assetType: "long_term", currentAmount: 0 }
+    ];
+    const DEFAULT_CREDIT_CARDS = [
+      { id: "cc-1", name: "主卡", dueDay: 15 },
+      { id: "cc-2", name: "副卡", dueDay: 25 }
+    ];
 
     const form = document.getElementById("recordForm");
+    const formSubmitBtn = form ? form.querySelector('button[type="submit"]') : null;
+    const formResetBtn = form ? form.querySelector('button[type="reset"]') : null;
     const dateInput = document.getElementById("date");
     const typeInput = document.getElementById("type");
     const itemNameInput = document.getElementById("itemName");
@@ -1354,6 +1829,18 @@
     const projectList = document.getElementById("projectList");
     const projectManagerPanel = document.getElementById("projectManagerPanel");
     const projectManagerToggleBtn = document.getElementById("projectManagerToggleBtn");
+    const recordAccountSelect = document.getElementById("recordAccount");
+    const paymentMethodField = document.getElementById("paymentMethodField");
+    const creditCardField = document.getElementById("creditCardField");
+    const recordCreditCardSelect = document.getElementById("recordCreditCard");
+    const payCashBtn = document.getElementById("payCashBtn");
+    const payCreditBtn = document.getElementById("payCreditBtn");
+    const payProxyBtn = document.getElementById("payProxyBtn");
+    const proxyListToggleBtn = document.getElementById("proxyListToggleBtn");
+    const proxyListPanel = document.getElementById("proxyListPanel");
+    const proxyList = document.getElementById("proxyList");
+    const payableTotalValueEl = document.getElementById("payableTotalValue");
+    const nextDueDateHintEl = document.getElementById("nextDueDateHint");
 
     const balanceEl = document.getElementById("balance");
     const totalIncomeEl = document.getElementById("totalIncome");
@@ -1371,6 +1858,8 @@
     const monthAvailableValueEl = document.getElementById("monthAvailableValue");
     const salaryIncomeValue = document.getElementById("salaryIncomeValue");
     const supportIncomeValue = document.getElementById("supportIncomeValue");
+    const assetReportTitle = document.getElementById("assetReportTitle");
+    const assetReportValue = document.getElementById("assetReportValue");
 
     const robotBtn = document.getElementById("robotBtn");
     const robotPanel = document.getElementById("robotPanel");
@@ -1382,6 +1871,7 @@
     const clearLeaf = document.getElementById("clearLeaf");
     const calcScreen = document.getElementById("calcScreen");
     const calcGrid = document.getElementById("calcGrid");
+    const appToast = document.getElementById("appToast");
 
     const currency = new Intl.NumberFormat("zh-TW", {
       style: "currency",
@@ -1392,13 +1882,22 @@
     let records = [];
     let categories = [];
     let projects = [];
+    let accounts = [];
+    let creditCards = [];
     let calcExpression = "0";
     let drawing = false;
     let lastPoint = { x: 0, y: 0 };
     let pieScope = "month";
     let splitEnabled = false;
+    let paymentMethod = "cash";
+    let editingRecordId = null;
     let editingProjectId = null;
     let draggingProjectId = null;
+    let toastTimer = null;
+
+    function markLocalDataUpdated() {
+      localStorage.setItem(LAST_LOCAL_DATA_UPDATE_KEY, new Date().toISOString());
+    }
 
     function setTodayDate() {
       const today = new Date();
@@ -1462,8 +1961,94 @@
       splitToggleBtn.disabled = isIncome;
       if (isIncome) {
         setSplitEnabled(false);
+        setPaymentMethod("cash");
       }
       renderCategoryOptions();
+      updatePaymentMethodVisibility();
+    }
+
+    function showToast(message) {
+      if (!appToast) return;
+      appToast.textContent = String(message || "");
+      appToast.classList.add("show");
+      if (toastTimer) {
+        clearTimeout(toastTimer);
+      }
+      toastTimer = setTimeout(() => {
+        appToast.classList.remove("show");
+      }, 1600);
+    }
+
+    function setFormEditMode(editing) {
+      if (formSubmitBtn) {
+        formSubmitBtn.textContent = editing ? "儲存修改" : "新增紀錄";
+      }
+      if (formResetBtn) {
+        formResetBtn.textContent = editing ? "取消修改" : "清空";
+      }
+    }
+
+    function beginEditRecord(recordId) {
+      const target = records.find((record) => record.id === recordId);
+      if (!target) return;
+
+      editingRecordId = recordId;
+      setFormEditMode(true);
+
+      setType(target.type);
+      dateInput.value = String(target.date || "");
+      itemNameInput.value = String(target.itemName || "");
+      amountInput.value = Number.isFinite(Number(target.amount)) ? String(Number(target.amount)) : "";
+      noteInput.value = String(target.note || "");
+
+      renderCategoryOptions();
+      if (target.category && Array.from(categorySelect.options).some((option) => option.value === target.category)) {
+        categorySelect.value = target.category;
+      }
+      if (recordAccountSelect) {
+        if (target.accountId && Array.from(recordAccountSelect.options).some((option) => option.value === target.accountId)) {
+          recordAccountSelect.value = target.accountId;
+        } else if (recordAccountSelect.options.length > 0) {
+          recordAccountSelect.value = recordAccountSelect.options[0].value;
+        }
+      }
+      setPaymentMethod(target.paymentMethod || "cash");
+      updatePaymentMethodVisibility();
+      if (recordCreditCardSelect && (target.paymentMethod === "credit_card" || target.paymentMethod === "proxy")) {
+        if (target.creditCardId && Array.from(recordCreditCardSelect.options).some((o) => o.value === target.creditCardId)) {
+          recordCreditCardSelect.value = target.creditCardId;
+        } else if (recordCreditCardSelect.options.length > 0) {
+          recordCreditCardSelect.value = recordCreditCardSelect.options[0].value;
+        }
+      }
+
+      renderProjectOptions();
+      if (target.projectId && Array.from(projectSelect.options).some((option) => option.value === target.projectId)) {
+        projectSelect.value = target.projectId;
+      } else {
+        projectSelect.value = "none";
+      }
+
+      const hasSplit = Number.isFinite(Number(target.myShare)) && Number.isFinite(Number(target.susieShare));
+      setSplitEnabled(target.type === "expense" && hasSplit);
+      if (splitEnabled) {
+        susieShareInput.value = String(Number(target.susieShare) || 0);
+        refreshSplitHint();
+      }
+
+      autoClassifyHint.textContent = "正在修改紀錄";
+      renderRecords();
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+      itemNameInput.focus();
+    }
+
+    function exitEditMode(shouldRender = true) {
+      editingRecordId = null;
+      setFormEditMode(false);
+      autoClassifyHint.textContent = "";
+      if (shouldRender) {
+        renderRecords();
+      }
     }
 
     function setProjectManagerOpen(open) {
@@ -1477,6 +2062,7 @@
     function renderIncomeAnalysis(scope, currentMonth, currentYear) {
       const periodIncomes = records.filter((record) => {
         if (record.type !== "income") return false;
+        if (record.recordKind === RECORD_KIND_INITIAL_BALANCE) return false;
         const dateText = String(record.date || "");
         if (scope === "month") return dateText.startsWith(currentMonth);
         if (scope === "year") return dateText.startsWith(`${currentYear}-`);
@@ -1493,6 +2079,254 @@
 
       salaryIncomeValue.textContent = currency.format(salaryIncome);
       supportIncomeValue.textContent = currency.format(supportIncome);
+    }
+
+    function normalizeAccounts(input) {
+      const seed = Array.isArray(input) && input.length ? input : DEFAULT_ACCOUNTS;
+      const normalized = seed
+        .map((account, index) => {
+          if (!account || typeof account.name !== "string") return null;
+          const name = account.name.trim();
+          if (!name) return null;
+          const id = String(account.id || `acc-${Date.now()}-${index}`).trim();
+          const assetType = account.assetType === "long_term" ? "long_term" : "liquid";
+          const currentValue = Number(account.currentAmount);
+          return {
+            id,
+            name,
+            assetType,
+            currentAmount: Number.isFinite(currentValue) && currentValue >= 0 ? currentValue : 0
+          };
+        })
+        .filter(Boolean);
+      return normalized.length ? normalized : DEFAULT_ACCOUNTS.slice();
+    }
+
+    function loadAccounts() {
+      let shouldPersist = false;
+      try {
+        const raw = localStorage.getItem(ACCOUNT_STORAGE_KEY);
+        accounts = normalizeAccounts(raw ? JSON.parse(raw) : null);
+        if (!raw) shouldPersist = true;
+      } catch {
+        accounts = normalizeAccounts(null);
+        shouldPersist = true;
+      }
+      if (shouldPersist) {
+        localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(accounts));
+      }
+    }
+
+    function saveAccounts() {
+      markLocalDataUpdated();
+      localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(accounts));
+      saveToCloud();
+    }
+
+    function normalizeCreditCards(input) {
+      const seed = Array.isArray(input) && input.length ? input : DEFAULT_CREDIT_CARDS;
+      const normalized = seed
+        .map((card, index) => {
+          if (!card || typeof card.name !== "string") return null;
+          const name = card.name.trim();
+          if (!name) return null;
+          const id = String(card.id || `cc-${Date.now()}-${index}`).trim();
+          const dueDay = Math.min(28, Math.max(1, Number(card.dueDay) || 15));
+          return { id, name, dueDay };
+        })
+        .filter(Boolean);
+      return normalized.length ? normalized : DEFAULT_CREDIT_CARDS.slice();
+    }
+
+    function loadCreditCards() {
+      try {
+        const raw = localStorage.getItem(CREDIT_CARD_STORAGE_KEY);
+        creditCards = normalizeCreditCards(raw ? JSON.parse(raw) : null);
+      } catch {
+        creditCards = normalizeCreditCards(null);
+      }
+      const stored = localStorage.getItem(CREDIT_CARD_STORAGE_KEY);
+      if (!stored) {
+        localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(creditCards));
+      }
+    }
+
+    function saveCreditCards() {
+      markLocalDataUpdated();
+      localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(creditCards));
+      saveToCloud();
+    }
+
+    function renderCreditCardOptions() {
+      if (!recordCreditCardSelect) return;
+      const selected = recordCreditCardSelect.value;
+      recordCreditCardSelect.innerHTML = "";
+      creditCards.forEach((card, index) => {
+        const option = document.createElement("option");
+        option.value = card.id;
+        option.textContent = `${card.name}（${card.dueDay}日繳款）`;
+        recordCreditCardSelect.appendChild(option);
+        if (index === 0) recordCreditCardSelect.value = card.id;
+      });
+      if (selected && creditCards.some((c) => c.id === selected)) {
+        recordCreditCardSelect.value = selected;
+      }
+    }
+
+    function setPaymentMethod(method) {
+      paymentMethod = method === "proxy" ? "proxy" : method === "credit_card" ? "credit_card" : "cash";
+      if (payCashBtn) payCashBtn.classList.toggle("active", paymentMethod === "cash");
+      if (payCreditBtn) payCreditBtn.classList.toggle("active", paymentMethod === "credit_card");
+      if (payProxyBtn) payProxyBtn.classList.toggle("active", paymentMethod === "proxy");
+      if (creditCardField) {
+        creditCardField.hidden = paymentMethod === "cash";
+      }
+      if (recordCreditCardSelect && creditCards.length > 0 && paymentMethod !== "cash") {
+        if (!recordCreditCardSelect.value) recordCreditCardSelect.value = creditCards[0].id;
+      }
+    }
+
+    function updatePaymentMethodVisibility() {
+      const isExpense = typeInput.value === "expense";
+      if (paymentMethodField) paymentMethodField.hidden = !isExpense;
+      if (creditCardField) creditCardField.hidden = !isExpense || paymentMethod === "cash";
+    }
+
+    function renderAccountOptions() {
+      if (!recordAccountSelect) return;
+      const selected = recordAccountSelect.value;
+      recordAccountSelect.innerHTML = "";
+      accounts.forEach((account, index) => {
+        const option = document.createElement("option");
+        option.value = account.id;
+        option.textContent = `${account.assetType === "long_term" ? "長期" : "流動"}｜${account.name}`;
+        recordAccountSelect.appendChild(option);
+        if (index === 0) {
+          recordAccountSelect.value = account.id;
+        }
+      });
+      if (selected && accounts.some((account) => account.id === selected)) {
+        recordAccountSelect.value = selected;
+      }
+    }
+
+    function renderAssetSummary() {
+      const total = accounts.reduce((sum, account) => sum + Number(account.currentAmount || 0), 0);
+      if (assetReportTitle) {
+        assetReportTitle.textContent = "帳戶總金額";
+      }
+      if (assetReportValue) {
+        assetReportValue.textContent = currency.format(total);
+      }
+    }
+
+    function getBillingCycleForCard(card, asOf) {
+      const d = asOf || new Date();
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const day = d.getDate();
+      const dueDay = Math.min(28, Math.max(1, Number(card.dueDay) || 15));
+      let nextDue;
+      if (day < dueDay) {
+        nextDue = new Date(year, month, dueDay);
+      } else {
+        nextDue = new Date(year, month + 1, dueDay);
+      }
+      const cycleEnd = new Date(nextDue.getTime());
+      const cycleStart = new Date(nextDue.getFullYear(), nextDue.getMonth() - 1, nextDue.getDate() + 1);
+      const fmt = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+      return { start: fmt(cycleStart), end: fmt(cycleEnd) };
+    }
+
+    function getNextDueDate(card) {
+      const d = new Date();
+      let month = d.getMonth();
+      let year = d.getFullYear();
+      const dueDay = Math.min(28, Math.max(1, Number(card.dueDay) || 15));
+      if (d.getDate() >= dueDay) {
+        month += 1;
+        if (month > 11) {
+          month = 0;
+          year += 1;
+        }
+      }
+      const next = new Date(year, month, dueDay);
+      return `${next.getFullYear()}/${String(next.getMonth() + 1).padStart(2, "0")}/${String(next.getDate()).padStart(2, "0")}`;
+    }
+
+    function computePayableSummary() {
+      const now = new Date();
+      let creditCardPayable = 0;
+      const cardDetails = [];
+      creditCards.forEach((card) => {
+        const { start, end } = getBillingCycleForCard(card, now);
+        const amount = records
+          .filter((r) => r.type === "expense" && r.paymentMethod === "credit_card" && r.creditCardId === card.id)
+          .filter((r) => {
+            const d = String(r.date || "");
+            return d >= start && d <= end;
+          })
+          .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        creditCardPayable += amount;
+        if (amount > 0) cardDetails.push({ card, amount, nextDue: getNextDueDate(card) });
+      });
+      const proxyUnrequested = records
+        .filter((r) => r.type === "expense" && r.paymentMethod === "proxy" && !r.reimbursementRequested)
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const totalPayable = creditCardPayable + proxyUnrequested;
+      return { creditCardPayable, proxyUnrequested, totalPayable, cardDetails };
+    }
+
+    function renderPayableSummary() {
+      const { totalPayable, cardDetails, proxyUnrequested } = computePayableSummary();
+      if (payableTotalValueEl) payableTotalValueEl.textContent = currency.format(totalPayable);
+      if (nextDueDateHintEl) {
+        const parts = [];
+        if (cardDetails.length) {
+          parts.push(...cardDetails.map((d) => `${d.card.name} 應繳 ${currency.format(d.amount)}，${d.nextDue} 繳款`));
+        }
+        if (proxyUnrequested > 0) {
+          parts.push(`代刷待請款 ${currency.format(proxyUnrequested)}`);
+        }
+        nextDueDateHintEl.textContent = parts.length ? parts.join("；") : "下次繳款日：-";
+      }
+    }
+
+    function renderProxyList() {
+      if (!proxyList) return;
+      const items = records
+        .filter((r) => r.type === "expense" && r.paymentMethod === "proxy")
+        .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+      proxyList.innerHTML = "";
+      if (!items.length) {
+        const p = document.createElement("p");
+        p.className = "sync-config-hint";
+        p.textContent = "尚無代刷紀錄。";
+        proxyList.appendChild(p);
+        return;
+      }
+      items.forEach((record) => {
+        const row = document.createElement("div");
+        row.className = "project-item";
+        row.dataset.id = record.id;
+        const requested = !!record.reimbursementRequested;
+        row.innerHTML = `
+          <div class="project-view">
+            ${escapeHtml(record.date || "-")}｜${escapeHtml(record.itemName || "-")}｜${currency.format(Number(record.amount || 0))}
+          </div>
+          <div class="project-item-actions">
+            <button type="button" class="tiny-btn ${requested ? "active" : ""}" data-action="toggle" data-id="${record.id}">${requested ? "已請款" : "未請款"}</button>
+          </div>
+        `;
+        proxyList.appendChild(row);
+      });
+    }
+
+    function setProxyListOpen(open) {
+      if (!proxyListPanel || !proxyListToggleBtn) return;
+      proxyListPanel.hidden = !open;
+      proxyListPanel.style.display = open ? "grid" : "none";
+      proxyListToggleBtn.textContent = open ? "收起代刷清單" : "展開代刷清單";
     }
 
     function renderProjectOptions() {
@@ -1553,6 +2387,7 @@
     }
 
     function saveProjects() {
+      markLocalDataUpdated();
       ensureProjectOrder();
       localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
       saveToCloud();
@@ -1598,18 +2433,30 @@
       if (!navigator.onLine || !isSupabaseConfigured()) return;
       try {
         const { url } = getSupabaseConfig();
-        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
+        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN},${SYNC_UPDATED_AT_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
         const response = await fetch(endpoint, {
           method: "GET",
           headers: getSupabaseHeaders()
         });
         if (!response.ok) return;
         const rows = await response.json();
-        const payload = Array.isArray(rows) && rows[0] && rows[0][SYNC_PAYLOAD_COLUMN] ? rows[0][SYNC_PAYLOAD_COLUMN] : null;
+        const cloudRow = Array.isArray(rows) && rows[0] ? rows[0] : null;
+        const payload = cloudRow && cloudRow[SYNC_PAYLOAD_COLUMN] ? cloudRow[SYNC_PAYLOAD_COLUMN] : null;
+        const cloudUpdatedAt = cloudRow && cloudRow[SYNC_UPDATED_AT_COLUMN] ? String(cloudRow[SYNC_UPDATED_AT_COLUMN]) : "";
+        const localUpdatedAt = String(localStorage.getItem(LAST_LOCAL_DATA_UPDATE_KEY) || "");
         if (!payload) return;
+        if (cloudUpdatedAt && localUpdatedAt) {
+          const cloudTime = Date.parse(cloudUpdatedAt);
+          const localTime = Date.parse(localUpdatedAt);
+          if (Number.isFinite(cloudTime) && Number.isFinite(localTime) && localTime > cloudTime) {
+            return;
+          }
+        }
         const cloudRecords = Array.isArray(payload.records) ? payload.records : [];
         const cloudCategories = payload.categories != null ? payload.categories : null;
         const cloudProjects = payload.projects != null ? payload.projects : null;
+        const cloudAccounts = payload.accounts != null ? payload.accounts : null;
+        const cloudCreditCards = payload.creditCards != null ? payload.creditCards : null;
 
         if (cloudCategories != null) {
           localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(cloudCategories));
@@ -1619,13 +2466,18 @@
           localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(cloudProjects));
           projects = normalizeProjects(cloudProjects);
         }
+        if (cloudAccounts != null) {
+          localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(cloudAccounts));
+          accounts = normalizeAccounts(cloudAccounts);
+        }
+        if (cloudCreditCards != null) {
+          localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(cloudCreditCards));
+          creditCards = normalizeCreditCards(cloudCreditCards);
+        }
         if (cloudRecords.length >= 0) {
           localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(cloudRecords));
           records = migrateRecords(cloudRecords);
         }
-        saveRecords();
-        saveCategories();
-        saveProjects();
       } catch (_) {}
     }
 
@@ -1636,7 +2488,9 @@
         const payload = {
           records: records,
           categories: categories,
-          projects: projects
+          projects: projects,
+          accounts: accounts,
+          creditCards: creditCards
         };
         const endpoint = `${url}/rest/v1/${SYNC_TABLE}?on_conflict=${SYNC_KEY_COLUMN}`;
         await fetch(endpoint, {
@@ -1716,6 +2570,7 @@
       if (!Array.isArray(rawRecords)) return [];
       const byProjectId = new Map(projects.map((project) => [project.id, project]));
       const byProjectName = new Map(projects.map((project) => [project.name.trim().toLowerCase(), project.id]));
+      const defaultAccountId = accounts[0] ? accounts[0].id : "";
 
       return rawRecords
         .filter((record) => record && typeof record === "object")
@@ -1741,11 +2596,17 @@
           next.projectId = projectId;
           next.myShare = Number.isFinite(Number(next.myShare)) ? Number(next.myShare) : null;
           next.susieShare = Number.isFinite(Number(next.susieShare)) ? Number(next.susieShare) : null;
+          next.accountId = String(next.accountId || defaultAccountId);
+          next.recordKind = String(next.recordKind || "");
+          next.paymentMethod = next.type === "expense" ? (next.paymentMethod || "cash") : "cash";
+          next.creditCardId = next.creditCardId || "";
+          next.reimbursementRequested = !!next.reimbursementRequested;
           return next;
         });
     }
 
     function saveRecords() {
+      markLocalDataUpdated();
       localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(records));
       saveToCloud();
     }
@@ -1758,23 +2619,24 @@
       } catch {
         records = [];
       }
-      saveRecords();
     }
 
     function updateSummary() {
       const now = new Date();
       const currentYear = String(now.getFullYear());
       const currentMonth = `${currentYear}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      const income = records.filter((r) => r.type === "income").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const income = records
+        .filter((r) => r.type === "income" && r.recordKind !== RECORD_KIND_INITIAL_BALANCE)
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const expense = records.filter((r) => r.type === "expense").reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const monthIncome = records
-        .filter((r) => r.type === "income" && String(r.date || "").startsWith(currentMonth))
+        .filter((r) => r.type === "income" && r.recordKind !== RECORD_KIND_INITIAL_BALANCE && String(r.date || "").startsWith(currentMonth))
         .reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const monthExpense = records
         .filter((r) => r.type === "expense" && String(r.date || "").startsWith(currentMonth))
         .reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const yearIncome = records
-        .filter((r) => r.type === "income" && String(r.date || "").startsWith(`${currentYear}-`))
+        .filter((r) => r.type === "income" && r.recordKind !== RECORD_KIND_INITIAL_BALANCE && String(r.date || "").startsWith(`${currentYear}-`))
         .reduce((sum, r) => sum + Number(r.amount || 0), 0);
       const balance = income - expense;
       const monthAvailable = monthIncome - monthExpense;
@@ -1786,6 +2648,9 @@
       monthAvailableValueEl.textContent = currency.format(monthAvailable);
       drawExpensePie(pieScope);
       renderIncomeAnalysis(pieScope, currentMonth, currentYear);
+      renderAssetSummary();
+      renderPayableSummary();
+      renderProxyList();
     }
 
     function createRecordRow(record) {
@@ -1796,12 +2661,16 @@
       const itemName = (record.itemName || "").trim() || (record.category || "").trim() || "未命名";
       const categoryName = (record.category || "").trim() || "未分類";
       const project = getProjectMeta(record.projectId);
+      const account = accounts.find((item) => item.id === record.accountId);
       const splitApplied = Number.isFinite(Number(record.myShare)) && Number.isFinite(Number(record.susieShare));
       const susieAmount = Number(record.susieShare);
       const hasSusieExpense = splitApplied && Number.isFinite(susieAmount) && susieAmount > 0;
 
       if (project && project.id !== "none") {
         tr.classList.add("project-row");
+      }
+      if (editingRecordId === record.id) {
+        tr.classList.add("editing-row");
       }
 
       const splitText = hasSusieExpense
@@ -1813,6 +2682,18 @@
       const supportTag = record.type === "income" && String(record.category || "") === SUPPORT_INCOME_CATEGORY
         ? `<span class="tag tag-support">🧡 補償性支援</span>`
         : "";
+      const initialTag = record.recordKind === RECORD_KIND_INITIAL_BALANCE
+        ? `<span class="tag">INITIAL_BALANCE</span>`
+        : "";
+      const accountTag = account ? `<span class="tag">${escapeHtml(account.name)}</span>` : "";
+      const payTag = record.type === "expense" && record.paymentMethod === "credit_card"
+        ? (() => {
+            const card = creditCards.find((c) => c.id === record.creditCardId);
+            return card ? `<span class="tag">信用卡 ${escapeHtml(card.name)}</span>` : `<span class="tag">信用卡</span>`;
+          })()
+        : record.type === "expense" && record.paymentMethod === "proxy"
+          ? `<span class="tag">代刷${record.reimbursementRequested ? "已請款" : "未請款"}</span>`
+          : "";
 
       tr.innerHTML = `
         <td class="cell-date">${escapeHtml(record.date || "-")}</td>
@@ -1821,13 +2702,19 @@
           <span class="item-wrap">
             <span>${escapeHtml(itemName)}</span>
             <span class="tag tag-category">${escapeHtml(categoryName)}</span>
+            ${initialTag}
+            ${accountTag}
+            ${payTag}
             ${projectTag}
             ${supportTag}
           </span>
         </td>
         <td class="cell-note">${record.note ? escapeHtml(record.note) : "-"}${splitText}</td>
         <td class="cell-amount ${amountClass}">${currency.format(Number(record.amount || 0))}</td>
-        <td class="cell-actions"><button class="btn-delete" data-id="${record.id}">刪除</button></td>
+        <td class="cell-actions">
+          <button class="btn-edit" data-id="${record.id}">修改</button>
+          <button class="btn-delete" data-id="${record.id}">刪除</button>
+        </td>
       `;
       return tr;
     }
@@ -2091,26 +2978,38 @@
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
+      const isEditing = Boolean(editingRecordId);
+      const editingRecord = isEditing ? records.find((item) => item.id === editingRecordId) : null;
       const amount = Number(amountInput.value);
       if (!Number.isFinite(amount) || amount <= 0) {
         alert("請輸入正確的金額。");
         return;
       }
 
+      const pm = typeInput.value === "expense" ? paymentMethod : "cash";
       const record = {
-        id: crypto.randomUUID(),
+        id: editingRecordId || crypto.randomUUID(),
         date: dateInput.value,
         type: typeInput.value,
         itemName: itemNameInput.value.trim(),
         category: categorySelect.value,
         projectId: projectSelect.value,
+        accountId: recordAccountSelect ? recordAccountSelect.value : "",
+        paymentMethod: pm,
+        creditCardId: (pm === "credit_card" || pm === "proxy") && recordCreditCardSelect ? recordCreditCardSelect.value : "",
+        reimbursementRequested: pm === "proxy" ? (editingRecord ? !!editingRecord.reimbursementRequested : false) : false,
         amount,
         note: noteInput.value.trim(),
         myShare: null,
-        susieShare: null
+        susieShare: null,
+        recordKind: editingRecord ? String(editingRecord.recordKind || "") : ""
       };
       if (!record.date || !record.itemName || !record.category) {
         alert("請完整填寫日期、項目名稱與分類。");
+        return;
+      }
+      if (!record.accountId) {
+        alert("請先選擇帳戶。");
         return;
       }
 
@@ -2129,8 +3028,19 @@
         record.susieShare = susieShare;
       }
 
-      records.push(record);
+      if (editingRecordId) {
+        const targetIndex = records.findIndex((item) => item.id === editingRecordId);
+        if (targetIndex >= 0) {
+          records[targetIndex] = record;
+        } else {
+          records.push(record);
+        }
+      } else {
+        records.push(record);
+      }
+
       saveRecords();
+      exitEditMode(false);
       renderRecords();
       itemNameInput.value = "";
       amountInput.value = "";
@@ -2138,21 +3048,41 @@
       autoClassifyHint.textContent = "";
       setSplitEnabled(false);
       itemNameInput.focus();
+      showToast(isEditing ? "紀錄已更新" : "紀錄已新增");
     });
 
     form.addEventListener("reset", () => {
       setTimeout(() => {
+        exitEditMode();
         autoClassifyHint.textContent = "";
         renderCategoryOptions();
         projectSelect.value = "none";
+        setPaymentMethod("cash");
+        updatePaymentMethodVisibility();
+        if (recordAccountSelect && recordAccountSelect.options.length > 0) {
+          recordAccountSelect.value = recordAccountSelect.options[0].value;
+        }
         setSplitEnabled(false);
       }, 0);
     });
 
     itemNameInput.addEventListener("input", runAutoClassify);
+    categorySelect.addEventListener("change", () => {
+      if (!editingRecordId) return;
+      itemNameInput.value = categorySelect.value;
+      autoClassifyHint.textContent = "已依新類別同步更新項目名稱";
+    });
     projectManagerToggleBtn.addEventListener("click", () => {
       setProjectManagerOpen(projectManagerPanel.hidden);
     });
+    if (proxyListToggleBtn && proxyListPanel) {
+      proxyListToggleBtn.addEventListener("click", () => {
+        setProxyListOpen(proxyListPanel.hidden);
+      });
+    }
+    if (payCashBtn) payCashBtn.addEventListener("click", () => setPaymentMethod("cash"));
+    if (payCreditBtn) payCreditBtn.addEventListener("click", () => setPaymentMethod("credit_card"));
+    if (payProxyBtn) payProxyBtn.addEventListener("click", () => setPaymentMethod("proxy"));
     typeIncomeBtn.addEventListener("click", () => setType("income"));
     typeExpenseBtn.addEventListener("click", () => setType("expense"));
     amountInput.addEventListener("input", refreshSplitHint);
@@ -2313,13 +3243,44 @@
     recordBody.addEventListener("click", (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-      if (!target.matches(".btn-delete")) return;
-      const id = target.dataset.id;
+      const button = target.closest("button");
+      if (!(button instanceof HTMLButtonElement)) return;
+      const id = button.dataset.id;
       if (!id) return;
-      records = records.filter((r) => r.id !== id);
-      saveRecords();
-      renderRecords();
+      if (button.classList.contains("btn-edit")) {
+        beginEditRecord(id);
+        return;
+      }
+      if (button.classList.contains("btn-delete")) {
+        records = records.filter((r) => r.id !== id);
+        if (editingRecordId === id) {
+          exitEditMode(false);
+        }
+        saveRecords();
+        renderRecords();
+        showToast("紀錄已刪除");
+      }
     });
+
+    if (proxyList) {
+      proxyList.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const button = target.closest("button");
+        if (!(button instanceof HTMLButtonElement)) return;
+        if (button.dataset.action !== "toggle") return;
+        const id = button.dataset.id;
+        if (!id) return;
+        const record = records.find((r) => r.id === id);
+        if (!record) return;
+        record.reimbursementRequested = !record.reimbursementRequested;
+        saveRecords();
+        renderProxyList();
+        renderRecords();
+        renderPayableSummary();
+        showToast(record.reimbursementRequested ? "已標記為已請款" : "已標記為未請款");
+      });
+    }
 
     robotBtn.addEventListener("click", () => {
       robotPanel.classList.toggle("show");
@@ -2473,13 +3434,43 @@
         loadRecords();
         loadCategories();
         loadProjects();
+        loadAccounts();
+        loadCreditCards();
         renderRecords();
         renderCategoryOptions();
         renderProjectOptions();
         renderProjectManager();
+        renderAccountOptions();
+        renderCreditCardOptions();
+        renderAssetSummary();
+        renderPayableSummary();
+        renderProxyList();
       });
     });
     window.addEventListener("offline", updateSyncStatus);
+
+    // 從其他頁返回（例如資產設定頁）時，確保用最新本機資料重繪。
+    function refreshFromLocalStorage() {
+      loadAccounts();
+      loadCreditCards();
+      loadRecords();
+      renderAccountOptions();
+      renderCreditCardOptions();
+      renderRecords();
+      renderAssetSummary();
+      renderPayableSummary();
+      renderProxyList();
+    }
+
+    window.addEventListener("pageshow", () => {
+      refreshFromLocalStorage();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        refreshFromLocalStorage();
+      }
+    });
 
     (async function init() {
       if (isStandaloneMode()) {
@@ -2489,14 +3480,26 @@
       setTodayDate();
       loadCategories();
       loadProjects();
+      loadAccounts();
+      loadCreditCards();
       await loadFromCloud();
       loadRecords();
       loadCategories();
       loadProjects();
+      loadAccounts();
+      loadCreditCards();
       setType("income");
+      setPaymentMethod("cash");
+      updatePaymentMethodVisibility();
       setProjectManagerOpen(false);
+      setProxyListOpen(false);
       renderProjectOptions();
       renderProjectManager();
+      renderAccountOptions();
+      renderCreditCardOptions();
+      renderAssetSummary();
+      renderPayableSummary();
+      renderProxyList();
       setPieScope("month");
       renderRecords();
       calcScreen.value = calcExpression;

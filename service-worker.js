@@ -1,8 +1,10 @@
-const CACHE_NAME = "my-money-app-cache-v1";
+const CACHE_NAME = "my-money-app-cache-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./categories.html",
+  "./accounts.html",
+  "./credit-cards.html",
   "./manifest.json",
   "./service-worker.js",
   "./app-icon.svg",
