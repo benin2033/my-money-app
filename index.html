@@ -119,7 +119,14 @@
 
     .header-right {
       display: flex;
+      align-items: center;
       gap: 8px;
+    }
+
+    .app-version {
+      font-size: 0.7rem;
+      color: var(--subtle);
+      opacity: 0.8;
     }
 
     h1 {
@@ -1459,6 +1466,7 @@
           <p class="subtitle">大地色系、花園氛圍，記下每一筆生活收支</p>
         </div>
         <div class="header-right">
+          <span class="app-version" title="暖暖記帳版本">v1.0.1</span>
           <span id="syncStatus" class="sync-status" title="雲端同步狀態"></span>
           <button type="button" id="syncConfigToggle" class="btn-link">雲端同步設定</button>
           <a class="btn-link" href="categories.html">管理類別</a>
@@ -3177,10 +3185,12 @@
       });
     }
 
-    robotBtn.addEventListener("click", () => {
-      robotPanel.classList.toggle("show");
-      robotPanel.setAttribute("aria-hidden", robotPanel.classList.contains("show") ? "false" : "true");
-    });
+    if (robotBtn && robotPanel) {
+      robotBtn.addEventListener("click", () => {
+        robotPanel.classList.toggle("show");
+        robotPanel.setAttribute("aria-hidden", robotPanel.classList.contains("show") ? "false" : "true");
+      });
+    }
 
     if (calcGrid) calcGrid.addEventListener("click", (event) => {
       const target = event.target;

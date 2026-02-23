@@ -1,0 +1,29 @@
+---
+description: 暖暖記帳 - 每次修改後需更新右上角版本號
+globs: index.html
+alwaysApply: false
+---
+
+# 版本號更新規則
+
+修改暖暖記帳 App 的 `index.html` 後，**必須**同步更新右上角顯示的版本號。
+
+## 版本號位置
+
+在 `<div class="header-right">` 內的 `<span class="app-version">`：
+
+```html
+<span class="app-version" title="暖暖記帳版本">v1.0.1</span>
+```
+
+## 版本格式
+
+使用語意化版本 `v主版本.次版本.修訂號`：
+- **修訂號 +1**：小修正、Bug 修復
+- **次版本 +1**：新功能
+- **主版本 +1**：大幅變更
+
+## 範例
+
+- 修復 merge conflict → v1.0.2
+- 新增某功能 → v1.1.0
