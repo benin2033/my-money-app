@@ -791,39 +791,6 @@
       display: block;
     }
 
-    .leaf-board-wrap {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 8px;
-      background: #faf2e5;
-    }
-
-    .leaf-board {
-      position: relative;
-      width: 100%;
-      height: 170px;
-      border-radius: 10px;
-      overflow: hidden;
-      background:
-        radial-gradient(circle at 25% 65%, rgba(194, 221, 162, 0.55) 0 18%, transparent 19%),
-        radial-gradient(circle at 70% 35%, rgba(168, 206, 133, 0.56) 0 22%, transparent 23%),
-        radial-gradient(circle at 60% 75%, rgba(209, 232, 184, 0.55) 0 17%, transparent 18%),
-        linear-gradient(135deg, #f4f8e9, #eaf4db);
-    }
-
-    .leaf-canvas {
-      position: absolute;
-      inset: 0;
-      touch-action: none;
-    }
-
-    .leaf-actions {
-      margin-top: 8px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-
     .calc {
       border: 1px solid var(--line);
       border-radius: 12px;
@@ -1712,26 +1679,10 @@
   <aside id="robotPanel" class="robot-panel" aria-hidden="true">
     <p class="tool-title">小幫手工具箱</p>
     <ol class="tool-list">
-      <li>螢光筆可直接在葉面上塗寫</li>
       <li>計算機，直接在頁面旁協助你做簡單計算</li>
     </ol>
-    <div class="tool-switch">
-      <button type="button" id="showHighlighter" class="active">螢光筆</button>
-      <button type="button" id="showCalculator">計算機</button>
-    </div>
 
-    <section id="toolHighlighter" class="tool-body show">
-      <div class="leaf-board-wrap">
-        <div class="leaf-board">
-          <canvas id="leafCanvas" class="leaf-canvas"></canvas>
-        </div>
-      </div>
-      <div class="leaf-actions">
-        <button type="button" id="clearLeaf">清空葉面</button>
-      </div>
-    </section>
-
-    <section id="toolCalculator" class="tool-body">
+    <section id="toolCalculator" class="tool-body show">
       <div class="calc">
         <input id="calcScreen" class="calc-screen" type="text" value="0" readonly />
         <div class="calc-grid" id="calcGrid">
@@ -1863,13 +1814,8 @@
 
     const robotBtn = document.getElementById("robotBtn");
     const robotPanel = document.getElementById("robotPanel");
-    const showHighlighter = document.getElementById("showHighlighter");
-    const showCalculator = document.getElementById("showCalculator");
-    const toolHighlighter = document.getElementById("toolHighlighter");
-    const toolCalculator = document.getElementById("toolCalculator");
-    const leafCanvas = document.getElementById("leafCanvas");
-    const clearLeaf = document.getElementById("clearLeaf");
     const calcScreen = document.getElementById("calcScreen");
+    const calcGrid = document.getElementById("calcGrid");
     const calcGrid = document.getElementById("calcGrid");
     const appToast = document.getElementById("appToast");
 
@@ -1885,8 +1831,6 @@
     let accounts = [];
     let creditCards = [];
     let calcExpression = "0";
-    let drawing = false;
-    let lastPoint = { x: 0, y: 0 };
     let pieScope = "month";
     let splitEnabled = false;
     let paymentMethod = "cash";
@@ -2917,54 +2861,6 @@
       renderIncomeAnalysis(pieScope, currentMonth, currentYear);
     }
 
-    function switchTool(toolName) {
-      const isHighlighter = toolName === "highlighter";
-      showHighlighter.classList.toggle("active", isHighlighter);
-      showCalculator.classList.toggle("active", !isHighlighter);
-      toolHighlighter.classList.toggle("show", isHighlighter);
-      toolCalculator.classList.toggle("show", !isHighlighter);
-    }
-
-    function initLeafCanvas() {
-      const ratio = window.devicePixelRatio || 1;
-      const rect = leafCanvas.getBoundingClientRect();
-      leafCanvas.width = Math.max(1, Math.floor(rect.width * ratio));
-      leafCanvas.height = Math.max(1, Math.floor(rect.height * ratio));
-      const ctx = leafCanvas.getContext("2d");
-      if (!ctx) return;
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.strokeStyle = "rgba(252, 234, 82, 0.5)";
-      ctx.lineWidth = 18;
-    }
-
-    function getLeafPos(event) {
-      const rect = leafCanvas.getBoundingClientRect();
-      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-    }
-
-    function startDraw(event) {
-      drawing = true;
-      lastPoint = getLeafPos(event);
-    }
-
-    function draw(event) {
-      if (!drawing) return;
-      const ctx = leafCanvas.getContext("2d");
-      if (!ctx) return;
-      const next = getLeafPos(event);
-      ctx.beginPath();
-      ctx.moveTo(lastPoint.x, lastPoint.y);
-      ctx.lineTo(next.x, next.y);
-      ctx.stroke();
-      lastPoint = next;
-    }
-
-    function endDraw() {
-      drawing = false;
-    }
-
     function safeEval(expression) {
       const normalized = expression.replace(/%/g, "/100");
       if (!/^[\d+\-*/().\s]+$/.test(normalized)) return null;
@@ -3285,23 +3181,9 @@
     robotBtn.addEventListener("click", () => {
       robotPanel.classList.toggle("show");
       robotPanel.setAttribute("aria-hidden", robotPanel.classList.contains("show") ? "false" : "true");
-      if (robotPanel.classList.contains("show")) initLeafCanvas();
     });
 
-    showHighlighter.addEventListener("click", () => switchTool("highlighter"));
-    showCalculator.addEventListener("click", () => switchTool("calculator"));
-
-    leafCanvas.addEventListener("pointerdown", startDraw);
-    leafCanvas.addEventListener("pointermove", draw);
-    leafCanvas.addEventListener("pointerup", endDraw);
-    leafCanvas.addEventListener("pointerleave", endDraw);
-    clearLeaf.addEventListener("click", () => {
-      const ctx = leafCanvas.getContext("2d");
-      if (!ctx) return;
-      ctx.clearRect(0, 0, leafCanvas.width, leafCanvas.height);
-    });
-
-    calcGrid.addEventListener("click", (event) => {
+    if (calcGrid) calcGrid.addEventListener("click", (event) => {
       const target = event.target;
       if (!(target instanceof HTMLButtonElement)) return;
       const { value, action } = target.dataset;
@@ -3316,12 +3198,6 @@
         calcExpression = calcExpression === "0" || calcExpression === "錯誤" ? value : calcExpression + value;
       }
       calcScreen.value = calcExpression;
-    });
-
-    window.addEventListener("resize", () => {
-      if (robotPanel.classList.contains("show")) {
-        initLeafCanvas();
-      }
     });
 
     if ("serviceWorker" in navigator) {
