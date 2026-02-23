@@ -2918,6 +2918,7 @@
     }
 
     function switchTool(toolName) {
+      if (!showHighlighter || !showCalculator || !toolHighlighter || !toolCalculator) return;
       const isHighlighter = toolName === "highlighter";
       showHighlighter.classList.toggle("active", isHighlighter);
       showCalculator.classList.toggle("active", !isHighlighter);
@@ -2926,6 +2927,7 @@
     }
 
     function initLeafCanvas() {
+      if (!leafCanvas) return;
       const ratio = window.devicePixelRatio || 1;
       const rect = leafCanvas.getBoundingClientRect();
       leafCanvas.width = Math.max(1, Math.floor(rect.width * ratio));
@@ -2940,8 +2942,11 @@
     }
 
     function getLeafPos(event) {
+      if (!leafCanvas) return { x: 0, y: 0 };
       const rect = leafCanvas.getBoundingClientRect();
-      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      const x = (event.clientX != null ? event.clientX : (event.touches?.[0]?.clientX ?? 0)) - rect.left;
+      const y = (event.clientY != null ? event.clientY : (event.touches?.[0]?.clientY ?? 0)) - rect.top;
+      return { x, y };
     }
 
     function startDraw(event) {
@@ -3282,26 +3287,32 @@
       });
     }
 
-    robotBtn.addEventListener("click", () => {
-      robotPanel.classList.toggle("show");
-      robotPanel.setAttribute("aria-hidden", robotPanel.classList.contains("show") ? "false" : "true");
-      if (robotPanel.classList.contains("show")) initLeafCanvas();
-    });
+    if (robotBtn && robotPanel) {
+      robotBtn.addEventListener("click", () => {
+        robotPanel.classList.toggle("show");
+        robotPanel.setAttribute("aria-hidden", robotPanel.classList.contains("show") ? "false" : "true");
+        if (robotPanel.classList.contains("show")) initLeafCanvas();
+      });
+    }
 
-    showHighlighter.addEventListener("click", () => switchTool("highlighter"));
-    showCalculator.addEventListener("click", () => switchTool("calculator"));
+    if (showHighlighter) showHighlighter.addEventListener("click", () => switchTool("highlighter"));
+    if (showCalculator) showCalculator.addEventListener("click", () => switchTool("calculator"));
 
-    leafCanvas.addEventListener("pointerdown", startDraw);
-    leafCanvas.addEventListener("pointermove", draw);
-    leafCanvas.addEventListener("pointerup", endDraw);
-    leafCanvas.addEventListener("pointerleave", endDraw);
-    clearLeaf.addEventListener("click", () => {
-      const ctx = leafCanvas.getContext("2d");
-      if (!ctx) return;
-      ctx.clearRect(0, 0, leafCanvas.width, leafCanvas.height);
-    });
+    if (leafCanvas) {
+      leafCanvas.addEventListener("pointerdown", startDraw);
+      leafCanvas.addEventListener("pointermove", draw);
+      leafCanvas.addEventListener("pointerup", endDraw);
+      leafCanvas.addEventListener("pointerleave", endDraw);
+    }
+    if (clearLeaf && leafCanvas) {
+      clearLeaf.addEventListener("click", () => {
+        const ctx = leafCanvas.getContext("2d");
+        if (!ctx) return;
+        ctx.clearRect(0, 0, leafCanvas.width, leafCanvas.height);
+      });
+    }
 
-    calcGrid.addEventListener("click", (event) => {
+    if (calcGrid) calcGrid.addEventListener("click", (event) => {
       const target = event.target;
       if (!(target instanceof HTMLButtonElement)) return;
       const { value, action } = target.dataset;
