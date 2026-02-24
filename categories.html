@@ -255,14 +255,44 @@
       min-height: 18px;
     }
 
+    .robot-btn {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      border: 1px solid #e3c2a3;
+      background: linear-gradient(145deg, #f6dec1, #f0c899);
+      box-shadow: 0 8px 18px rgba(129, 81, 46, 0.25);
+      font-size: 1.5rem;
+      z-index: 30;
+    }
+    .robot-panel {
+      position: fixed;
+      right: 18px;
+      bottom: 92px;
+      width: min(360px, calc(100vw - 24px));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff8ef;
+      box-shadow: var(--shadow);
+      padding: 12px;
+      z-index: 30;
+      display: none;
+    }
+    .robot-panel.show { display: block; }
+    .tool-title { margin: 0 0 8px; color: #6f4d3a; font-size: 0.93rem; font-weight: 700; }
+    .tool-list { margin: 0 0 10px; padding-left: 18px; color: var(--subtle); font-size: 0.86rem; line-height: 1.55; }
+    .calc { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: #fbf1e3; }
+    .calc-screen { width: 100%; margin-bottom: 8px; text-align: right; font-weight: 700; font-size: 1rem; background: #fff8f0; }
+    .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .calc-grid button { padding: 9px 0; font-weight: 700; }
     @media (max-width: 760px) {
-      .form {
-        grid-template-columns: 1fr;
-      }
-
-      .row {
-        grid-template-columns: 1fr;
-      }
+      .form { grid-template-columns: 1fr; }
+      .row { grid-template-columns: 1fr; }
+      .robot-btn { width: 54px; height: 54px; right: 12px; bottom: 12px; }
+      .robot-panel { right: 12px; bottom: 76px; }
     }
   </style>
 </head>
@@ -297,6 +327,40 @@
       </div>
     </section>
   </main>
+
+  <button id="robotBtn" class="robot-btn" title="開啟小幫手">🤖</button>
+  <aside id="robotPanel" class="robot-panel" aria-hidden="true">
+    <p class="tool-title">小幫手工具箱</p>
+    <ol class="tool-list">
+      <li>計算機，直接在頁面旁協助你做簡單計算</li>
+    </ol>
+    <section id="toolCalculator" class="tool-body" style="display:block;">
+      <div class="calc">
+        <input id="calcScreen" class="calc-screen" type="text" value="0" readonly />
+        <div class="calc-grid" id="calcGrid">
+          <button type="button" data-action="clear">C</button>
+          <button type="button" data-action="delete">DEL</button>
+          <button type="button" data-value="%">%</button>
+          <button type="button" data-value="/">/</button>
+          <button type="button" data-value="7">7</button>
+          <button type="button" data-value="8">8</button>
+          <button type="button" data-value="9">9</button>
+          <button type="button" data-value="*">*</button>
+          <button type="button" data-value="4">4</button>
+          <button type="button" data-value="5">5</button>
+          <button type="button" data-value="6">6</button>
+          <button type="button" data-value="-">-</button>
+          <button type="button" data-value="1">1</button>
+          <button type="button" data-value="2">2</button>
+          <button type="button" data-value="3">3</button>
+          <button type="button" data-value="+">+</button>
+          <button type="button" data-value="0">0</button>
+          <button type="button" data-value=".">.</button>
+          <button type="button" data-action="equal" style="grid-column: span 2;">=</button>
+        </div>
+      </div>
+    </section>
+  </aside>
 
   <script>
     const CATEGORY_STORAGE_KEY = "money-app-categories-v1";
@@ -672,6 +736,40 @@
       await loadFromCloud();
       loadCategories();
       renderCategories();
+    })();
+
+    (function initRobot() {
+      const robotBtn = document.getElementById("robotBtn");
+      const robotPanel = document.getElementById("robotPanel");
+      const calcScreen = document.getElementById("calcScreen");
+      const calcGrid = document.getElementById("calcGrid");
+      let calcExpression = "0";
+      function safeEval(expr) {
+        const n = (expr || "").replace(/%/g, "/100");
+        if (!/^[\d+\-*/().\s]+$/.test(n)) return null;
+        try {
+          const r = Function('"use strict"; return (' + n + ');')();
+          return Number.isFinite(r) ? r : null;
+        } catch { return null; }
+      }
+      if (robotBtn && robotPanel) {
+        robotBtn.addEventListener("click", () => {
+          robotPanel.classList.toggle("show");
+          robotPanel.setAttribute("aria-hidden", robotPanel.classList.contains("show") ? "false" : "true");
+        });
+      }
+      if (calcGrid && calcScreen) {
+        calcGrid.addEventListener("click", (e) => {
+          const btn = e.target;
+          if (!(btn instanceof HTMLButtonElement)) return;
+          const { value, action } = btn.dataset;
+          if (action === "clear") calcExpression = "0";
+          else if (action === "delete") calcExpression = calcExpression.length > 1 ? calcExpression.slice(0, -1) : "0";
+          else if (action === "equal") { const r = safeEval(calcExpression); calcExpression = r === null ? "錯誤" : String(r); }
+          else if (value) calcExpression = (calcExpression === "0" || calcExpression === "錯誤") ? value : calcExpression + value;
+          calcScreen.value = calcExpression;
+        });
+      }
     })();
   </script>
 </body>
