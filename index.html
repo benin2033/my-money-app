@@ -1466,7 +1466,7 @@
           <p class="subtitle">大地色系、花園氛圍，記下每一筆生活收支</p>
         </div>
         <div class="header-right">
-          <span class="app-version" title="暖暖記帳版本">v1.0.1</span>
+          <span class="app-version" title="暖暖記帳版本">v1.0.2</span>
           <span id="syncStatus" class="sync-status" title="雲端同步狀態"></span>
           <button type="button" id="syncConfigToggle" class="btn-link">雲端同步設定</button>
           <a class="btn-link" href="categories.html">管理類別</a>
@@ -1734,6 +1734,7 @@
     const SYNC_KEY_COLUMN = "sync_key";
     const SYNC_PAYLOAD_COLUMN = "sync_payload";
     const SYNC_UPDATED_AT_COLUMN = "sync_updated_at";
+    const SYNC_DEBOUNCE_MS = 600;
     const SUPPORT_INCOME_CATEGORY = "外部支援 (老公)";
     const RECORD_KIND_INITIAL_BALANCE = "INITIAL_BALANCE";
     const INCOME_CATEGORIES = ["固定薪資", SUPPORT_INCOME_CATEGORY, "其他收入"];
@@ -2380,85 +2381,198 @@
       }
     }
 
-    async function loadFromCloud() {
-      if (!navigator.onLine || !isSupabaseConfigured()) return;
-      try {
-        const { url } = getSupabaseConfig();
-        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN},${SYNC_UPDATED_AT_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
-        const response = await fetch(endpoint, {
-          method: "GET",
-          headers: getSupabaseHeaders()
-        });
-        if (!response.ok) return;
-        const rows = await response.json();
-        const cloudRow = Array.isArray(rows) && rows[0] ? rows[0] : null;
-        const payload = cloudRow && cloudRow[SYNC_PAYLOAD_COLUMN] ? cloudRow[SYNC_PAYLOAD_COLUMN] : null;
-        const cloudUpdatedAt = cloudRow && cloudRow[SYNC_UPDATED_AT_COLUMN] ? String(cloudRow[SYNC_UPDATED_AT_COLUMN]) : "";
-        const localUpdatedAt = String(localStorage.getItem(LAST_LOCAL_DATA_UPDATE_KEY) || "");
-        if (!payload) return;
-        if (cloudUpdatedAt && localUpdatedAt) {
-          const cloudTime = Date.parse(cloudUpdatedAt);
-          const localTime = Date.parse(localUpdatedAt);
-          if (Number.isFinite(cloudTime) && Number.isFinite(localTime) && localTime > cloudTime) {
-            return;
-          }
-        }
-        const cloudRecords = Array.isArray(payload.records) ? payload.records : [];
-        const cloudCategories = payload.categories != null ? payload.categories : null;
-        const cloudProjects = payload.projects != null ? payload.projects : null;
-        const cloudAccounts = payload.accounts != null ? payload.accounts : null;
-        const cloudCreditCards = payload.creditCards != null ? payload.creditCards : null;
+    let syncLock = Promise.resolve();
+    let saveToCloudTimer = null;
 
-        if (cloudCategories != null) {
-          localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(cloudCategories));
-          categories = normalizeCategories(cloudCategories);
-        }
-        if (cloudProjects != null) {
-          localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(cloudProjects));
-          projects = normalizeProjects(cloudProjects);
-        }
-        if (cloudAccounts != null) {
-          localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(cloudAccounts));
-          accounts = normalizeAccounts(cloudAccounts);
-        }
-        if (cloudCreditCards != null) {
-          localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(cloudCreditCards));
-          creditCards = normalizeCreditCards(cloudCreditCards);
-        }
-        if (cloudRecords.length >= 0) {
-          localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(cloudRecords));
-          records = migrateRecords(cloudRecords);
-        }
-      } catch (_) {}
+    function withSyncLock(fn) {
+      const next = syncLock.then(() => fn());
+      syncLock = next.catch(() => {});
+      return next;
     }
 
-    async function saveToCloud() {
+    function mergeRecords(local, cloud) {
+      const byId = new Map();
+      for (const r of cloud) {
+        if (r && r.id) byId.set(r.id, r);
+      }
+      for (const r of local) {
+        if (!r || !r.id) continue;
+        const existing = byId.get(r.id);
+        const rDate = String(r.date || "");
+        const exDate = existing ? String(existing.date || "") : "";
+        if (!existing || rDate > exDate || (rDate === exDate && r !== existing)) {
+          byId.set(r.id, r);
+        }
+      }
+      return Array.from(byId.values());
+    }
+
+    function mergeById(local, cloud, idKey) {
+      const byId = new Map();
+      for (const item of cloud) {
+        const id = item && item[idKey];
+        if (id != null) byId.set(id, item);
+      }
+      for (const item of local) {
+        const id = item && item[idKey];
+        if (id != null) byId.set(id, item);
+      }
+      return Array.from(byId.values());
+    }
+
+    function mergeCategories(local, cloud) {
+      const byName = new Map();
+      for (const c of cloud) {
+        if (c && c.name) byName.set(c.name.trim(), c);
+      }
+      for (const c of local) {
+        if (c && c.name) byName.set(c.name.trim(), c);
+      }
+      return Array.from(byName.values());
+    }
+
+    async function loadFromCloud() {
       if (!navigator.onLine || !isSupabaseConfigured()) return;
-      try {
-        const { url } = getSupabaseConfig();
-        const payload = {
-          records: records,
-          categories: categories,
-          projects: projects,
-          accounts: accounts,
-          creditCards: creditCards
-        };
-        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?on_conflict=${SYNC_KEY_COLUMN}`;
-        await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            ...getSupabaseHeaders(),
-            Prefer: "resolution=merge-duplicates,return=minimal"
-          },
-          body: JSON.stringify([
-            {
-              [SYNC_KEY_COLUMN]: SYNC_ROW_ID,
-              [SYNC_PAYLOAD_COLUMN]: payload,
-              [SYNC_UPDATED_AT_COLUMN]: new Date().toISOString()
+      return withSyncLock(async () => {
+        try {
+          const { url } = getSupabaseConfig();
+          const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN},${SYNC_UPDATED_AT_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
+          const response = await fetch(endpoint, {
+            method: "GET",
+            headers: getSupabaseHeaders()
+          });
+          if (!response.ok) return;
+          const rows = await response.json();
+          const cloudRow = Array.isArray(rows) && rows[0] ? rows[0] : null;
+          const payload = cloudRow && cloudRow[SYNC_PAYLOAD_COLUMN] ? cloudRow[SYNC_PAYLOAD_COLUMN] : null;
+          const cloudUpdatedAt = cloudRow && cloudRow[SYNC_UPDATED_AT_COLUMN] ? String(cloudRow[SYNC_UPDATED_AT_COLUMN]) : "";
+          const localUpdatedAt = String(localStorage.getItem(LAST_LOCAL_DATA_UPDATE_KEY) || "");
+          if (!payload) return;
+          if (cloudUpdatedAt && localUpdatedAt) {
+            const cloudTime = Date.parse(cloudUpdatedAt);
+            const localTime = Date.parse(localUpdatedAt);
+            if (Number.isFinite(cloudTime) && Number.isFinite(localTime) && localTime > cloudTime) {
+              return;
             }
-          ])
-        });
-      } catch (_) {}
+          }
+          const cloudRecords = Array.isArray(payload.records) ? payload.records : [];
+          const cloudCategories = payload.categories != null ? payload.categories : null;
+          const cloudProjects = payload.projects != null ? payload.projects : null;
+          const cloudAccounts = payload.accounts != null ? payload.accounts : null;
+          const cloudCreditCards = payload.creditCards != null ? payload.creditCards : null;
+
+          if (cloudCategories != null) {
+            localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(cloudCategories));
+            categories = normalizeCategories(cloudCategories);
+          }
+          if (cloudProjects != null) {
+            localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(cloudProjects));
+            projects = normalizeProjects(cloudProjects);
+          }
+          if (cloudAccounts != null) {
+            localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(cloudAccounts));
+            accounts = normalizeAccounts(cloudAccounts);
+          }
+          if (cloudCreditCards != null) {
+            localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(cloudCreditCards));
+            creditCards = normalizeCreditCards(cloudCreditCards);
+          }
+          if (cloudRecords.length >= 0) {
+            localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(cloudRecords));
+            records = migrateRecords(cloudRecords);
+          }
+        } catch (_) {}
+      });
+    }
+
+    async function doSaveToCloud() {
+      if (!navigator.onLine || !isSupabaseConfigured()) return;
+      return withSyncLock(async () => {
+        try {
+          const { url } = getSupabaseConfig();
+          const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN},${SYNC_UPDATED_AT_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
+          const response = await fetch(endpoint, {
+            method: "GET",
+            headers: getSupabaseHeaders()
+          });
+          let payload = {
+            records: records,
+            categories: categories,
+            projects: projects,
+            accounts: accounts,
+            creditCards: creditCards
+          };
+          if (response.ok) {
+            const rows = await response.json();
+            const cloudRow = Array.isArray(rows) && rows[0] ? rows[0] : null;
+            const cloudPayload = cloudRow && cloudRow[SYNC_PAYLOAD_COLUMN] ? cloudRow[SYNC_PAYLOAD_COLUMN] : null;
+            const cloudUpdatedAt = cloudRow && cloudRow[SYNC_UPDATED_AT_COLUMN] ? String(cloudRow[SYNC_UPDATED_AT_COLUMN]) : "";
+            const localUpdatedAt = String(localStorage.getItem(LAST_LOCAL_DATA_UPDATE_KEY) || "");
+            if (cloudPayload && cloudUpdatedAt && localUpdatedAt) {
+              const cloudTime = Date.parse(cloudUpdatedAt);
+              const localTime = Date.parse(localUpdatedAt);
+              if (Number.isFinite(cloudTime) && Number.isFinite(localTime) && cloudTime > localTime) {
+                const cloudRecords = Array.isArray(cloudPayload.records) ? cloudPayload.records : [];
+                const cloudCategories = cloudPayload.categories != null ? cloudPayload.categories : [];
+                const cloudProjects = cloudPayload.projects != null ? cloudPayload.projects : [];
+                const cloudAccounts = cloudPayload.accounts != null ? cloudPayload.accounts : [];
+                const cloudCreditCards = cloudPayload.creditCards != null ? cloudPayload.creditCards : [];
+                payload = {
+                  records: mergeRecords(records, cloudRecords),
+                  categories: mergeCategories(categories, cloudCategories),
+                  projects: mergeById(projects, cloudProjects, "id"),
+                  accounts: mergeById(accounts, cloudAccounts, "id"),
+                  creditCards: mergeById(creditCards, cloudCreditCards, "id")
+                };
+                records = migrateRecords(payload.records);
+                categories = normalizeCategories(payload.categories);
+                projects = normalizeProjects(payload.projects);
+                accounts = normalizeAccounts(payload.accounts);
+                creditCards = normalizeCreditCards(payload.creditCards);
+                localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(payload.records));
+                localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(payload.categories));
+                localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(payload.projects));
+                localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(payload.accounts));
+                localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(payload.creditCards));
+              }
+            }
+          }
+          const saveEndpoint = `${url}/rest/v1/${SYNC_TABLE}?on_conflict=${SYNC_KEY_COLUMN}`;
+          await fetch(saveEndpoint, {
+            method: "POST",
+            headers: {
+              ...getSupabaseHeaders(),
+              Prefer: "resolution=merge-duplicates,return=minimal"
+            },
+            body: JSON.stringify([
+              {
+                [SYNC_KEY_COLUMN]: SYNC_ROW_ID,
+                [SYNC_PAYLOAD_COLUMN]: payload,
+                [SYNC_UPDATED_AT_COLUMN]: new Date().toISOString()
+              }
+            ])
+          });
+          markLocalDataUpdated();
+        } catch (_) {}
+      });
+    }
+
+    function saveToCloud(opts) {
+      if (!navigator.onLine || !isSupabaseConfigured()) return Promise.resolve();
+      const immediate = opts && opts.immediate === true;
+      if (immediate) {
+        if (saveToCloudTimer) {
+          clearTimeout(saveToCloudTimer);
+          saveToCloudTimer = null;
+        }
+        return doSaveToCloud();
+      }
+      if (saveToCloudTimer) clearTimeout(saveToCloudTimer);
+      saveToCloudTimer = setTimeout(() => {
+        saveToCloudTimer = null;
+        doSaveToCloud();
+      }, SYNC_DEBOUNCE_MS);
+      return Promise.resolve();
     }
 
     function parseKeywords(raw) {
@@ -3315,7 +3429,7 @@
 
     window.addEventListener("online", () => {
       updateSyncStatus();
-      saveToCloud().then(() => loadFromCloud()).then(() => {
+      saveToCloud({ immediate: true }).then(() => loadFromCloud()).then(() => {
         loadRecords();
         loadCategories();
         loadProjects();
@@ -3352,8 +3466,21 @@
     });
 
     document.addEventListener("visibilitychange", () => {
+      if (document.hidden && saveToCloudTimer) {
+        clearTimeout(saveToCloudTimer);
+        saveToCloudTimer = null;
+        doSaveToCloud();
+      }
       if (!document.hidden) {
         refreshFromLocalStorage();
+      }
+    });
+
+    window.addEventListener("beforeunload", () => {
+      if (saveToCloudTimer) {
+        clearTimeout(saveToCloudTimer);
+        saveToCloudTimer = null;
+        doSaveToCloud();
       }
     });
 
