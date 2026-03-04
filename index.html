@@ -351,6 +351,14 @@
       font-weight: 700;
       color: var(--expense);
     }
+    .credit-card-monthly-total {
+      margin-top: 4px;
+      padding-top: 6px;
+      border-top: 1px solid var(--line);
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--expense);
+    }
     .credit-card-monthly-edit-form {
       display: grid;
       gap: 8px;
@@ -1513,7 +1521,7 @@
           <p class="subtitle">大地色系、花園氛圍，記下每一筆生活收支</p>
         </div>
         <div class="header-right">
-          <span class="app-version" title="暖暖記帳版本">v1.1.1</span>
+          <span class="app-version" title="暖暖記帳版本">v1.1.2</span>
           <span id="syncStatus" class="sync-status" title="雲端同步狀態"></span>
           <button type="button" id="syncConfigToggle" class="btn-link">雲端同步設定</button>
           <a class="btn-link" href="categories.html">管理類別</a>
@@ -1587,6 +1595,7 @@
           <div id="creditCardMonthlySection" class="credit-card-monthly">
             <p class="credit-card-monthly-title">本月信用卡繳款</p>
             <div id="creditCardMonthlyList" class="credit-card-monthly-list"></div>
+            <div id="creditCardMonthlyTotal" class="credit-card-monthly-total"></div>
             <button type="button" id="creditCardMonthlyEditBtn" class="btn-inline tiny-btn">設定當月繳款</button>
             <div id="creditCardMonthlyEditForm" class="credit-card-monthly-edit-form" hidden></div>
           </div>
@@ -2354,8 +2363,10 @@
         listEl.appendChild(p);
         return;
       }
+      let totalAmount = 0;
       creditCards.forEach((card) => {
         const { dueDate, amount } = getCardMonthlyDisplay(card);
+        totalAmount += amount;
         const row = document.createElement("div");
         row.className = "credit-card-monthly-item";
         row.dataset.cardId = card.id;
@@ -2366,6 +2377,8 @@
         `;
         listEl.appendChild(row);
       });
+      const totalEl = document.getElementById("creditCardMonthlyTotal");
+      if (totalEl) totalEl.textContent = creditCards.length ? `合計總計　${currency.format(totalAmount)}` : "";
     }
 
     function openCreditCardMonthlyEdit() {
