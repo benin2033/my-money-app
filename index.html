@@ -319,6 +319,53 @@
       color: var(--subtle);
     }
 
+    .credit-card-monthly {
+      width: 100%;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed var(--line);
+      display: grid;
+      gap: 8px;
+    }
+    .credit-card-monthly-title {
+      margin: 0;
+      font-size: 0.86rem;
+      color: var(--subtle);
+      font-weight: 700;
+    }
+    .credit-card-monthly-list {
+      display: grid;
+      gap: 6px;
+    }
+    .credit-card-monthly-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+    .credit-card-monthly-item-info {
+      color: var(--text);
+    }
+    .credit-card-monthly-item-info .amount {
+      font-weight: 700;
+      color: var(--expense);
+    }
+    .credit-card-monthly-edit-form {
+      display: grid;
+      gap: 8px;
+    }
+    .credit-card-monthly-edit-row {
+      display: grid;
+      grid-template-columns: auto 1fr 5rem;
+      gap: 6px;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+    .credit-card-monthly-edit-row label {
+      font-weight: 600;
+      color: var(--subtle);
+    }
     .income-analysis {
       width: 100%;
       margin-top: 4px;
@@ -1466,7 +1513,7 @@
           <p class="subtitle">大地色系、花園氛圍，記下每一筆生活收支</p>
         </div>
         <div class="header-right">
-          <span class="app-version" title="暖暖記帳版本">v1.0.3</span>
+          <span class="app-version" title="暖暖記帳版本">v1.1.0</span>
           <span id="syncStatus" class="sync-status" title="雲端同步狀態"></span>
           <button type="button" id="syncConfigToggle" class="btn-link">雲端同步設定</button>
           <a class="btn-link" href="categories.html">管理類別</a>
@@ -1537,6 +1584,12 @@
           </div>
         </div>
         <div class="pie-box">
+          <div id="creditCardMonthlySection" class="credit-card-monthly">
+            <p class="credit-card-monthly-title">本月信用卡繳款</p>
+            <div id="creditCardMonthlyList" class="credit-card-monthly-list"></div>
+            <button type="button" id="creditCardMonthlyEditBtn" class="btn-inline tiny-btn">設定當月繳款</button>
+            <div id="creditCardMonthlyEditForm" class="credit-card-monthly-edit-form" hidden></div>
+          </div>
           <p id="pieTitle" class="pie-title">本月消費分類占比</p>
           <div class="scope-switch">
             <button id="pieMonthBtn" type="button" class="scope-btn active">本月</button>
@@ -1724,6 +1777,7 @@
     const PROJECT_STORAGE_KEY = "money-app-projects-v1";
     const ACCOUNT_STORAGE_KEY = "money-app-accounts-v1";
     const CREDIT_CARD_STORAGE_KEY = "money-app-credit-cards-v1";
+    const CREDIT_CARD_MONTHLY_STORAGE_KEY = "money-app-credit-card-monthly-v1";
     const LAST_LOCAL_DATA_UPDATE_KEY = "money-app-last-local-data-update-at";
     const SUPABASE_URL_KEY = "money-app-supabase-url";
     const SUPABASE_ANON_KEY = "money-app-supabase-anon-key";
@@ -1838,6 +1892,7 @@
     let projects = [];
     let accounts = [];
     let creditCards = [];
+    let creditCardMonthly = {};
     let calcExpression = "0";
     let pieScope = "month";
     let splitEnabled = false;
@@ -2109,6 +2164,27 @@
       saveToCloud();
     }
 
+    function getCurrentMonthKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function loadCreditCardMonthly() {
+      try {
+        const raw = localStorage.getItem(CREDIT_CARD_MONTHLY_STORAGE_KEY);
+        creditCardMonthly = raw && typeof JSON.parse(raw) === "object" ? JSON.parse(raw) : {};
+        if (typeof creditCardMonthly !== "object") creditCardMonthly = {};
+      } catch {
+        creditCardMonthly = {};
+      }
+    }
+
+    function saveCreditCardMonthly() {
+      markLocalDataUpdated();
+      localStorage.setItem(CREDIT_CARD_MONTHLY_STORAGE_KEY, JSON.stringify(creditCardMonthly));
+      saveToCloud();
+    }
+
     function renderCreditCardOptions() {
       if (!recordCreditCardSelect) return;
       const selected = recordCreditCardSelect.value;
@@ -2242,6 +2318,116 @@
         }
         nextDueDateHintEl.textContent = parts.length ? parts.join("；") : "下次繳款日：-";
       }
+      renderCreditCardMonthlyPayments();
+    }
+
+    function formatDueDateForDisplay(dateStr) {
+      if (!dateStr) return "-";
+      const s = String(dateStr);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        const [y, m, d] = s.split("-");
+        return `${y}/${m}/${d}`;
+      }
+      return s;
+    }
+
+    function getCardMonthlyDisplay(card) {
+      const monthKey = getCurrentMonthKey();
+      const override = creditCardMonthly[monthKey] && creditCardMonthly[monthKey][card.id];
+      const computed = computePayableSummary().cardDetails.find((d) => d.card.id === card.id);
+      return {
+        dueDate: override && override.dueDate ? formatDueDateForDisplay(override.dueDate) : (computed ? computed.nextDue : getNextDueDate(card)),
+        amount: override && typeof override.amount === "number" ? override.amount : (computed ? computed.amount : 0)
+      };
+    }
+
+    function renderCreditCardMonthlyPayments() {
+      const listEl = document.getElementById("creditCardMonthlyList");
+      if (!listEl) return;
+      listEl.innerHTML = "";
+      if (!creditCards.length) {
+        const p = document.createElement("p");
+        p.className = "sync-config-hint";
+        p.style.margin = "0";
+        p.style.fontSize = "0.82rem";
+        p.textContent = "尚無信用卡，請先至信用卡管理新增。";
+        listEl.appendChild(p);
+        return;
+      }
+      creditCards.forEach((card) => {
+        const { dueDate, amount } = getCardMonthlyDisplay(card);
+        const row = document.createElement("div");
+        row.className = "credit-card-monthly-item";
+        row.dataset.cardId = card.id;
+        row.innerHTML = `
+          <div class="credit-card-monthly-item-info">
+            ${escapeHtml(card.name)}　${formatDueDateForDisplay(dueDate)}　<span class="amount">${currency.format(amount)}</span>
+          </div>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+
+    function openCreditCardMonthlyEdit() {
+      const formEl = document.getElementById("creditCardMonthlyEditForm");
+      const editBtn = document.getElementById("creditCardMonthlyEditBtn");
+      if (!formEl || !editBtn) return;
+      const monthKey = getCurrentMonthKey();
+      const [y, m] = monthKey.split("-").map(Number);
+      const lastDay = new Date(y, m, 0).getDate();
+      formEl.innerHTML = "";
+      formEl.hidden = false;
+      editBtn.textContent = "收起";
+      creditCards.forEach((card) => {
+        const override = creditCardMonthly[monthKey] && creditCardMonthly[monthKey][card.id];
+        const def = getCardMonthlyDisplay(card);
+        const dueDateVal = override && override.dueDate ? override.dueDate : `${monthKey}-${String(Math.min(card.dueDay || 15, lastDay)).padStart(2, "0")}`;
+        const amountVal = override && typeof override.amount === "number" ? override.amount : def.amount;
+        const row = document.createElement("div");
+        row.className = "credit-card-monthly-edit-row";
+        row.innerHTML = `
+          <label>${escapeHtml(card.name)}</label>
+          <input type="date" data-card-id="${card.id}" data-field="dueDate" value="${dueDateVal}" min="${monthKey}-01" max="${monthKey}-${String(lastDay).padStart(2, "0")}" />
+          <input type="number" data-card-id="${card.id}" data-field="amount" min="0" step="1" value="${amountVal}" placeholder="0" style="width:5rem;" />
+        `;
+        formEl.appendChild(row);
+      });
+      const saveRow = document.createElement("div");
+      saveRow.className = "credit-card-monthly-edit-row";
+      saveRow.innerHTML = `<div></div><div></div><button type="button" class="btn-inline btn-primary tiny-btn" id="creditCardMonthlySaveBtn">儲存</button>`;
+      formEl.appendChild(saveRow);
+      document.getElementById("creditCardMonthlySaveBtn")?.addEventListener("click", saveCreditCardMonthlyEdit);
+    }
+
+    function closeCreditCardMonthlyEdit() {
+      const formEl = document.getElementById("creditCardMonthlyEditForm");
+      const editBtn = document.getElementById("creditCardMonthlyEditBtn");
+      if (!formEl || !editBtn) return;
+      formEl.hidden = true;
+      formEl.innerHTML = "";
+      editBtn.textContent = "設定當月繳款";
+    }
+
+    function saveCreditCardMonthlyEdit() {
+      const formEl = document.getElementById("creditCardMonthlyEditForm");
+      if (!formEl) return;
+      const monthKey = getCurrentMonthKey();
+      if (!creditCardMonthly[monthKey]) creditCardMonthly[monthKey] = {};
+      formEl.querySelectorAll(".credit-card-monthly-edit-row").forEach((row) => {
+        const dueInput = row.querySelector('input[data-field="dueDate"]');
+        const amountInput = row.querySelector('input[data-field="amount"]');
+        if (!dueInput || !amountInput) return;
+        const cardId = dueInput.dataset.cardId;
+        if (!cardId) return;
+        creditCardMonthly[monthKey][cardId] = {
+          dueDate: dueInput.value || "",
+          amount: Math.max(0, Number(amountInput.value) || 0)
+        };
+      });
+      saveCreditCardMonthly();
+      closeCreditCardMonthlyEdit();
+      renderCreditCardMonthlyPayments();
+      showToast("已儲存當月繳款設定");
     }
 
     function renderProxyList() {
@@ -2500,7 +2686,8 @@
             categories: categories,
             projects: projects,
             accounts: accounts,
-            creditCards: creditCards
+            creditCards: creditCards,
+            creditCardMonthly: creditCardMonthly
           };
           if (response.ok) {
             const rows = await response.json();
@@ -2517,23 +2704,27 @@
                 const cloudProjects = cloudPayload.projects != null ? cloudPayload.projects : [];
                 const cloudAccounts = cloudPayload.accounts != null ? cloudPayload.accounts : [];
                 const cloudCreditCards = cloudPayload.creditCards != null ? cloudPayload.creditCards : [];
+                const cloudCreditCardMonthly = cloudPayload.creditCardMonthly != null && typeof cloudPayload.creditCardMonthly === "object" ? cloudPayload.creditCardMonthly : {};
                 payload = {
                   records: mergeRecords(records, cloudRecords),
                   categories: mergeCategories(categories, cloudCategories),
                   projects: mergeById(projects, cloudProjects, "id"),
                   accounts: mergeById(accounts, cloudAccounts, "id"),
-                  creditCards: mergeById(creditCards, cloudCreditCards, "id")
+                  creditCards: mergeById(creditCards, cloudCreditCards, "id"),
+                  creditCardMonthly: { ...creditCardMonthly, ...cloudCreditCardMonthly }
                 };
                 records = migrateRecords(payload.records);
                 categories = normalizeCategories(payload.categories);
                 projects = normalizeProjects(payload.projects);
                 accounts = normalizeAccounts(payload.accounts);
                 creditCards = normalizeCreditCards(payload.creditCards);
+                creditCardMonthly = payload.creditCardMonthly;
                 localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(payload.records));
                 localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(payload.categories));
                 localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(payload.projects));
                 localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(payload.accounts));
                 localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(payload.creditCards));
+                localStorage.setItem(CREDIT_CARD_MONTHLY_STORAGE_KEY, JSON.stringify(creditCardMonthly));
               }
             }
           }
@@ -3107,6 +3298,14 @@
     splitToggleBtn.addEventListener("click", () => setSplitEnabled(!splitEnabled));
     pieMonthBtn.addEventListener("click", () => setPieScope("month"));
     pieYearBtn.addEventListener("click", () => setPieScope("year"));
+    const creditCardMonthlyEditBtn = document.getElementById("creditCardMonthlyEditBtn");
+    if (creditCardMonthlyEditBtn) {
+      creditCardMonthlyEditBtn.addEventListener("click", () => {
+        const formEl = document.getElementById("creditCardMonthlyEditForm");
+        if (formEl && formEl.hidden) openCreditCardMonthlyEdit();
+        else closeCreditCardMonthlyEdit();
+      });
+    }
     addProjectBtn.addEventListener("click", () => {
       const name = projectNameInput.value.trim();
       const icon = projectIconInput.value.trim() || "🧾";
@@ -3452,6 +3651,7 @@
     function refreshFromLocalStorage() {
       loadAccounts();
       loadCreditCards();
+      loadCreditCardMonthly();
       loadRecords();
       renderAccountOptions();
       renderCreditCardOptions();
@@ -3494,6 +3694,7 @@
       loadProjects();
       loadAccounts();
       loadCreditCards();
+      loadCreditCardMonthly();
       await loadFromCloud();
       loadRecords();
       loadCategories();
