@@ -339,10 +339,22 @@
     }
     .credit-card-monthly-item {
       display: grid;
-      grid-template-columns: 1fr auto 5rem;
+      grid-template-columns: auto 1fr auto 5rem;
       gap: 10px;
       align-items: center;
       font-size: 0.82rem;
+    }
+    .credit-card-monthly-item.paid .credit-card-monthly-item-name,
+    .credit-card-monthly-item.paid .credit-card-monthly-item-date,
+    .credit-card-monthly-item.paid .amount {
+      opacity: 0.6;
+      text-decoration: line-through;
+    }
+    .credit-card-monthly-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--accent);
     }
     .credit-card-monthly-item-name {
       color: var(--text);
@@ -366,7 +378,7 @@
       font-weight: 700;
       color: var(--expense);
       display: grid;
-      grid-template-columns: 1fr auto 5rem;
+      grid-template-columns: auto 1fr auto 5rem;
       gap: 10px;
       align-items: center;
     }
@@ -1535,7 +1547,7 @@
           <p class="subtitle">大地色系、花園氛圍，記下每一筆生活收支</p>
         </div>
         <div class="header-right">
-          <span class="app-version" title="暖暖記帳版本">v1.1.3</span>
+          <span class="app-version" title="暖暖記帳版本">v1.1.4</span>
           <span id="syncStatus" class="sync-status" title="雲端同步狀態"></span>
           <button type="button" id="syncConfigToggle" class="btn-link">雲端同步設定</button>
           <a class="btn-link" href="categories.html">管理類別</a>
@@ -2360,8 +2372,18 @@
       const computed = computePayableSummary().cardDetails.find((d) => d.card.id === card.id);
       return {
         dueDate: override && override.dueDate ? formatDueDateForDisplay(override.dueDate) : (computed ? computed.nextDue : getNextDueDate(card)),
-        amount: override && typeof override.amount === "number" ? override.amount : (computed ? computed.amount : 0)
+        amount: override && typeof override.amount === "number" ? override.amount : (computed ? computed.amount : 0),
+        paid: !!(override && override.paid)
       };
+    }
+
+    function toggleCardPaid(cardId) {
+      const monthKey = getCurrentMonthKey();
+      if (!creditCardMonthly[monthKey]) creditCardMonthly[monthKey] = {};
+      if (!creditCardMonthly[monthKey][cardId]) creditCardMonthly[monthKey][cardId] = {};
+      creditCardMonthly[monthKey][cardId].paid = !creditCardMonthly[monthKey][cardId].paid;
+      saveCreditCardMonthly();
+      renderCreditCardMonthlyPayments();
     }
 
     function renderCreditCardMonthlyPayments() {
@@ -2379,12 +2401,13 @@
       }
       let totalAmount = 0;
       creditCards.forEach((card) => {
-        const { dueDate, amount } = getCardMonthlyDisplay(card);
+        const { dueDate, amount, paid } = getCardMonthlyDisplay(card);
         totalAmount += amount;
         const row = document.createElement("div");
-        row.className = "credit-card-monthly-item";
+        row.className = "credit-card-monthly-item" + (paid ? " paid" : "");
         row.dataset.cardId = card.id;
         row.innerHTML = `
+          <input type="checkbox" data-card-id="${card.id}" ${paid ? "checked" : ""} title="${paid ? "已繳款" : "標記為已繳款"}" />
           <div class="credit-card-monthly-item-name">${escapeHtml(card.name)}</div>
           <div class="credit-card-monthly-item-date">${formatDueDateForDisplay(dueDate)}</div>
           <div class="amount">${currency.format(amount)}</div>
@@ -2394,7 +2417,7 @@
       const totalEl = document.getElementById("creditCardMonthlyTotal");
       if (totalEl) {
         if (creditCards.length) {
-          totalEl.innerHTML = `<span class="total-label">合計總計</span><span></span><span class="total-amount">${currency.format(totalAmount)}</span>`;
+          totalEl.innerHTML = `<span></span><span class="total-label">合計總計</span><span></span><span class="total-amount">${currency.format(totalAmount)}</span>`;
           totalEl.hidden = false;
         } else {
           totalEl.innerHTML = "";
@@ -2454,7 +2477,9 @@
         if (!dueInput || !amountInput) return;
         const cardId = dueInput.dataset.cardId;
         if (!cardId) return;
+        const existing = creditCardMonthly[monthKey][cardId] || {};
         creditCardMonthly[monthKey][cardId] = {
+          ...existing,
           dueDate: dueInput.value || "",
           amount: Math.max(0, Number(amountInput.value) || 0)
         };
@@ -3339,6 +3364,15 @@
         const formEl = document.getElementById("creditCardMonthlyEditForm");
         if (formEl && formEl.hidden) openCreditCardMonthlyEdit();
         else closeCreditCardMonthlyEdit();
+      });
+    }
+    const creditCardMonthlyList = document.getElementById("creditCardMonthlyList");
+    if (creditCardMonthlyList) {
+      creditCardMonthlyList.addEventListener("change", (e) => {
+        const cb = e.target;
+        if (cb.type === "checkbox" && cb.dataset.cardId) {
+          toggleCardPaid(cb.dataset.cardId);
+        }
       });
     }
     addProjectBtn.addEventListener("click", () => {
