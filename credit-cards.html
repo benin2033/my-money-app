@@ -186,6 +186,15 @@
   <script>
     const CREDIT_CARD_STORAGE_KEY = "money-app-credit-cards-v1";
     const LAST_LOCAL_DATA_UPDATE_KEY = "money-app-last-local-data-update-at";
+    const SUPABASE_URL_KEY = "money-app-supabase-url";
+    const SUPABASE_ANON_KEY = "money-app-supabase-anon-key";
+    const SUPABASE_DEFAULT_URL = "https://wbirxxapsemulrsjjqao.supabase.co";
+    const SUPABASE_DEFAULT_ANON_KEY = "sb_publishable_toooZNwiSeEG6YAHD9qrZA_0GA7xNYi";
+    const SYNC_TABLE = "money_sync_state";
+    const SYNC_ROW_ID = "main";
+    const SYNC_KEY_COLUMN = "sync_key";
+    const SYNC_PAYLOAD_COLUMN = "sync_payload";
+    const SYNC_UPDATED_AT_COLUMN = "sync_updated_at";
     const DEFAULT_CREDIT_CARDS = [
       { id: "cc-1", name: "主卡", dueDay: 15 },
       { id: "cc-2", name: "副卡", dueDay: 25 }
@@ -227,6 +236,81 @@
     function saveCreditCards() {
       localStorage.setItem(LAST_LOCAL_DATA_UPDATE_KEY, new Date().toISOString());
       localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(creditCards));
+      saveToCloud();
+    }
+
+    function getSupabaseConfig() {
+      const url = (localStorage.getItem(SUPABASE_URL_KEY) || SUPABASE_DEFAULT_URL).trim();
+      const anonKey = (localStorage.getItem(SUPABASE_ANON_KEY) || SUPABASE_DEFAULT_ANON_KEY).trim();
+      return { url, anonKey };
+    }
+    function isSupabaseConfigured() {
+      const { url, anonKey } = getSupabaseConfig();
+      return url.length > 0 && anonKey.length > 0;
+    }
+    function getSupabaseHeaders() {
+      const { anonKey } = getSupabaseConfig();
+      return { apikey: anonKey, "Content-Type": "application/json" };
+    }
+    async function loadFromCloud() {
+      if (!navigator.onLine || !isSupabaseConfigured()) return;
+      try {
+        const { url } = getSupabaseConfig();
+        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN},${SYNC_UPDATED_AT_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
+        const response = await fetch(endpoint, { method: "GET", headers: getSupabaseHeaders() });
+        if (!response.ok) return;
+        const rows = await response.json();
+        const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+        const p = row && row[SYNC_PAYLOAD_COLUMN] ? row[SYNC_PAYLOAD_COLUMN] : null;
+        const cloudUpdatedAt = row && row[SYNC_UPDATED_AT_COLUMN] ? String(row[SYNC_UPDATED_AT_COLUMN]) : "";
+        const localUpdatedAt = String(localStorage.getItem(LAST_LOCAL_DATA_UPDATE_KEY) || "");
+        if (!p || !Array.isArray(p.creditCards)) return;
+        if (cloudUpdatedAt && localUpdatedAt) {
+          const cloudTime = Date.parse(cloudUpdatedAt);
+          const localTime = Date.parse(localUpdatedAt);
+          if (Number.isFinite(cloudTime) && Number.isFinite(localTime) && localTime > cloudTime) return;
+        }
+        localStorage.setItem(CREDIT_CARD_STORAGE_KEY, JSON.stringify(p.creditCards));
+        creditCards = normalizeCreditCards(p.creditCards);
+      } catch (_) {}
+    }
+    async function saveToCloud() {
+      if (!navigator.onLine || !isSupabaseConfigured()) return;
+      try {
+        const { url } = getSupabaseConfig();
+        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
+        const response = await fetch(endpoint, { method: "GET", headers: getSupabaseHeaders() });
+        let payload = {
+          records: JSON.parse(localStorage.getItem("money-app-records-v1") || "[]"),
+          categories: JSON.parse(localStorage.getItem("money-app-categories-v1") || "[]"),
+          projects: JSON.parse(localStorage.getItem("money-app-projects-v1") || "[]"),
+          accounts: JSON.parse(localStorage.getItem("money-app-accounts-v1") || "[]"),
+          creditCards: creditCards,
+          creditCardMonthly: JSON.parse(localStorage.getItem("money-app-credit-card-monthly-v1") || "{}")
+        };
+        if (response.ok) {
+          const rows = await response.json();
+          const cloudPayload = Array.isArray(rows) && rows[0] && rows[0][SYNC_PAYLOAD_COLUMN] ? rows[0][SYNC_PAYLOAD_COLUMN] : null;
+          if (cloudPayload) {
+            payload = {
+              records: cloudPayload.records ?? payload.records,
+              categories: cloudPayload.categories ?? payload.categories,
+              projects: cloudPayload.projects ?? payload.projects,
+              accounts: cloudPayload.accounts ?? payload.accounts,
+              creditCards: creditCards,
+              creditCardMonthly: cloudPayload.creditCardMonthly ?? payload.creditCardMonthly
+            };
+          }
+        }
+        const saveEndpoint = `${url}/rest/v1/${SYNC_TABLE}?on_conflict=${SYNC_KEY_COLUMN}`;
+        await fetch(saveEndpoint, {
+          method: "POST",
+          headers: { ...getSupabaseHeaders(), Prefer: "resolution=merge-duplicates,return=minimal" },
+          body: JSON.stringify([
+            { [SYNC_KEY_COLUMN]: SYNC_ROW_ID, [SYNC_PAYLOAD_COLUMN]: payload, [SYNC_UPDATED_AT_COLUMN]: new Date().toISOString() }
+          ])
+        });
+      } catch (_) {}
     }
 
     function escapeHtml(text) {
@@ -361,8 +445,15 @@
     });
 
     addBtn.addEventListener("click", addCard);
-    loadCreditCards();
-    renderCards();
+
+    (async function init() {
+      await loadFromCloud();
+      loadCreditCards();
+      renderCards();
+      if (navigator.onLine && isSupabaseConfigured() && creditCards.length > 0) {
+        saveToCloud();
+      }
+    })();
 
     (function initRobot() {
       const robotBtn = document.getElementById("robotBtn");
