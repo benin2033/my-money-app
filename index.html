@@ -1552,7 +1552,7 @@
           <p class="subtitle">大地色系、花園氛圍，記下每一筆生活收支</p>
         </div>
         <div class="header-right">
-          <span class="app-version" title="暖暖記帳版本">v1.1.6</span>
+          <span class="app-version" title="暖暖記帳版本">v1.1.7</span>
           <span id="syncStatus" class="sync-status" title="雲端同步狀態"></span>
           <button type="button" id="syncConfigToggle" class="btn-link">雲端同步設定</button>
           <a class="btn-link" href="categories.html">管理類別</a>
@@ -1562,6 +1562,7 @@
 
       <div id="syncConfigPanel" class="sync-config-panel card" hidden>
         <p class="sync-config-title">Supabase 雲端同步（電腦與手機共用同一份資料）</p>
+        <p class="sync-config-hint" style="margin-top:0;color:var(--expense);font-weight:500;">⚠️ 電腦與手機需「各自」設定一次，在兩邊都輸入相同的 URL 與金鑰，才會同步。</p>
         <div class="sync-config-fields">
           <div class="field">
             <label for="supabaseUrl">Supabase 專案 URL</label>
@@ -1572,6 +1573,7 @@
             <input id="supabaseAnonKey" type="text" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." autocomplete="off" />
           </div>
           <button type="button" id="saveSupabaseConfig" class="btn-primary">儲存設定</button>
+          <button type="button" id="manualSyncBtn" class="btn-link" style="margin-left:0.5rem;">立即從雲端同步</button>
         </div>
         <p class="sync-config-hint">離線時會先存於本機，有網路時會自動上傳並拉取最新資料。多裝置以最後同步的為準。</p>
       </div>
@@ -3609,6 +3611,7 @@
     const supabaseUrlInput = document.getElementById("supabaseUrl");
     const supabaseAnonKeyInput = document.getElementById("supabaseAnonKey");
     const saveSupabaseConfigBtn = document.getElementById("saveSupabaseConfig");
+    const manualSyncBtn = document.getElementById("manualSyncBtn");
     const installBanner = document.getElementById("installBanner");
     const installText = document.getElementById("installText");
     const installBtn = document.getElementById("installBtn");
@@ -3699,6 +3702,39 @@
         localStorage.setItem(SUPABASE_ANON_KEY, anonKey);
         updateSyncStatus();
         alert("已儲存，之後開啟 App 會從雲端載入，變更也會自動同步。");
+      });
+    }
+    if (manualSyncBtn) {
+      manualSyncBtn.addEventListener("click", async () => {
+        if (!isSupabaseConfigured()) {
+          alert("請先完成雲端同步設定（填寫 Supabase URL 與金鑰）。");
+          return;
+        }
+        if (!navigator.onLine) {
+          alert("目前離線，請先連上網路再同步。");
+          return;
+        }
+        manualSyncBtn.disabled = true;
+        manualSyncBtn.textContent = "同步中…";
+        try {
+          await loadFromCloud();
+          refreshFromLocalStorage();
+          renderRecords();
+          renderCategoryOptions();
+          renderProjectOptions();
+          renderProjectManager();
+          renderAccountOptions();
+          renderCreditCardOptions();
+          renderAssetSummary();
+          renderPayableSummary();
+          renderProxyList();
+          alert("已從雲端同步最新資料。");
+        } catch {
+          alert("同步失敗，請確認網路與 Supabase 設定。");
+        } finally {
+          manualSyncBtn.disabled = false;
+          manualSyncBtn.textContent = "立即從雲端同步";
+        }
       });
     }
 
