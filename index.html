@@ -1580,6 +1580,8 @@
           <button type="button" id="forceUploadBtn" class="btn-link" style="margin-left:4px;">強制上傳本機</button>
           （此裝置資料覆蓋雲端） ·
           <button type="button" id="forceDownloadBtn" class="btn-link" style="margin-left:4px;">強制從雲端覆蓋本機</button>
+          ·
+          <button type="button" id="checkCloudBtn" class="btn-link" style="margin-left:4px;">檢查雲端</button>
         </div>
         <p class="sync-config-hint">離線時會先存於本機，有網路時會自動上傳並拉取最新資料。多裝置以最後同步的為準。</p>
       </div>
@@ -2696,20 +2698,25 @@
       if (!navigator.onLine || !isSupabaseConfigured()) return;
       const force = opts && opts.force === true;
       return withSyncLock(async () => {
-        try {
-          const { url } = getSupabaseConfig();
-          const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN},${SYNC_UPDATED_AT_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
-          const response = await fetch(endpoint, {
-            method: "GET",
-            headers: getSupabaseHeaders()
-          });
-          if (!response.ok) return;
-          const rows = await response.json();
-          const cloudRow = Array.isArray(rows) && rows[0] ? rows[0] : null;
-          const payload = cloudRow && cloudRow[SYNC_PAYLOAD_COLUMN] ? cloudRow[SYNC_PAYLOAD_COLUMN] : null;
-          const cloudUpdatedAt = cloudRow && cloudRow[SYNC_UPDATED_AT_COLUMN] ? String(cloudRow[SYNC_UPDATED_AT_COLUMN]) : "";
-          const localUpdatedAt = String(localStorage.getItem(LAST_LOCAL_DATA_UPDATE_KEY) || "");
-          if (!payload) return;
+        const { url } = getSupabaseConfig();
+        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN},${SYNC_UPDATED_AT_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
+        const response = await fetch(endpoint, {
+          method: "GET",
+          headers: getSupabaseHeaders()
+        });
+        if (!response.ok) {
+          const msg = `雲端連線失敗 (${response.status})，請確認 URL 與金鑰是否與電腦相同`;
+          throw new Error(msg);
+        }
+        const rows = await response.json();
+        const cloudRow = Array.isArray(rows) && rows[0] ? rows[0] : null;
+        const payload = cloudRow && cloudRow[SYNC_PAYLOAD_COLUMN] ? cloudRow[SYNC_PAYLOAD_COLUMN] : null;
+        const cloudUpdatedAt = cloudRow && cloudRow[SYNC_UPDATED_AT_COLUMN] ? String(cloudRow[SYNC_UPDATED_AT_COLUMN]) : "";
+        const localUpdatedAt = String(localStorage.getItem(LAST_LOCAL_DATA_UPDATE_KEY) || "");
+        if (!payload && force) {
+          throw new Error("雲端尚無資料，請先在電腦點「強制上傳本機」");
+        }
+        if (!payload) return;
           if (!force && cloudUpdatedAt && localUpdatedAt) {
             const cloudTime = Date.parse(cloudUpdatedAt);
             const localTime = Date.parse(localUpdatedAt);
@@ -2743,8 +2750,30 @@
             localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(cloudRecords));
             records = migrateRecords(cloudRecords);
           }
-        } catch (_) {}
+        } catch (e) {
+          throw e;
+        }
       });
+    }
+
+    async function checkCloudConnection() {
+      if (!navigator.onLine || !isSupabaseConfigured()) {
+        return { ok: false, msg: "請先完成雲端設定並確保有網路" };
+      }
+      try {
+        const { url } = getSupabaseConfig();
+        const endpoint = `${url}/rest/v1/${SYNC_TABLE}?select=${SYNC_PAYLOAD_COLUMN},${SYNC_UPDATED_AT_COLUMN}&${SYNC_KEY_COLUMN}=eq.${encodeURIComponent(SYNC_ROW_ID)}`;
+        const response = await fetch(endpoint, { method: "GET", headers: getSupabaseHeaders() });
+        if (!response.ok) return { ok: false, msg: `連線失敗 (${response.status})，URL 或金鑰可能與電腦不同` };
+        const rows = await response.json();
+        const cloudRow = Array.isArray(rows) && rows[0] ? rows[0] : null;
+        const payload = cloudRow && cloudRow[SYNC_PAYLOAD_COLUMN] ? cloudRow[SYNC_PAYLOAD_COLUMN] : null;
+        const recCount = Array.isArray(payload?.records) ? payload.records.length : 0;
+        const updatedAt = cloudRow && cloudRow[SYNC_UPDATED_AT_COLUMN] ? String(cloudRow[SYNC_UPDATED_AT_COLUMN]) : "-";
+        return { ok: true, recCount, updatedAt };
+      } catch (e) {
+        return { ok: false, msg: String(e?.message || e || "連線失敗") };
+      }
     }
 
     async function doForceUploadToCloud() {
@@ -3821,11 +3850,35 @@
           renderPayableSummary();
           renderProxyList();
           alert("已從雲端覆蓋本機資料。");
-        } catch {
-          alert("同步失敗，請確認網路與 Supabase 設定。");
+        } catch (e) {
+          alert("同步失敗：" + (e?.message || "請確認網路與 Supabase 設定"));
         } finally {
           forceDownloadBtn.disabled = false;
           forceDownloadBtn.textContent = "強制從雲端覆蓋本機";
+        }
+      });
+    }
+    const checkCloudBtn = document.getElementById("checkCloudBtn");
+    if (checkCloudBtn) {
+      checkCloudBtn.addEventListener("click", async () => {
+        if (!isSupabaseConfigured() || !navigator.onLine) {
+          alert("請先完成雲端設定並確保有網路。");
+          return;
+        }
+        checkCloudBtn.disabled = true;
+        checkCloudBtn.textContent = "檢查中…";
+        try {
+          const r = await checkCloudConnection();
+          if (r.ok) {
+            alert(`✓ 連線成功\n雲端有 ${r.recCount} 筆紀錄\n最後更新：${r.updatedAt}`);
+          } else {
+            alert("✗ " + r.msg);
+          }
+        } catch (e) {
+          alert("檢查失敗：" + (e?.message || e));
+        } finally {
+          checkCloudBtn.disabled = false;
+          checkCloudBtn.textContent = "檢查雲端";
         }
       });
     }
